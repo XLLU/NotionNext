@@ -27,11 +27,40 @@ NotionNext is a Next.js-based static blog system that uses Notion as a CMS. It f
   ```
 
 ### Production Server Connection
-*Note: Please add your production server connection details here when available*
-- **Server Host**: [To be added]
-- **SSH Connection**: [To be added]
-- **Deployment Method**: [To be added]
-- **Server Path**: [To be added]
+- **Server Host**: freemium
+- **SSH Connection**: `ssh root@freemium`
+- **Deployment Method**: PM2 Process Manager
+- **Server Path**: `/data/NotionNext`
+- **Process Name**: notionnext
+- **Node.js Version**: v20.19.2
+- **NPM Version**: 10.8.2
+
+### Deployment Commands
+```bash
+# Connect to server
+ssh root@freemium
+
+# Navigate to project directory
+cd /data/NotionNext
+
+# Pull latest code
+git pull origin main
+
+# Install dependencies
+npm install
+
+# Fix security issues
+npm audit fix
+
+# Build production
+npm run build
+
+# Restart service
+pm2 restart notionnext
+
+# Check service status
+pm2 list
+```
 
 ### Recent Updates (2025-08-31)
 - Successfully merged upstream v4.9.0 updates

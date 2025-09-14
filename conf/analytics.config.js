@@ -34,7 +34,7 @@ module.exports = {
   CLARITY_ID: process.env.NEXT_PUBLIC_CLARITY_ID || null, // 只需要复制Clarity脚本中的ID部分，ID是一个十位的英文数字组合
 
   UMAMI_HOST: process.env.NEXT_PUBLIC_UMAMI_HOST || 'https://cloud.umami.is/script.js', // umami的服务地址
-  UMAMI_ID: process.env.NEXT_PUBLIC_UMAMI_ID || '', // umami的id
+  UMAMI_ID: process.env.NEXT_PUBLIC_UMAMI_ID || 'freemium-cc-umami-id', // umami的id - 需要用户配置实际ID
 
   // <---- 站点统计
 }

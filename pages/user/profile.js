@@ -12,17 +12,17 @@ export default function UserProfile(props) {
   const { isLoaded, isSignedIn, user, openSignIn } = useGlobal()
   const router = useRouter()
 
-  // 检查登录状态，未登录则重定向到登录页
+  // 检查登录状态，未登录则打开登录模态框
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
       // 保存当前URL，登录后重定向回来
       const currentUrl = window.location.href
       sessionStorage.setItem('redirectAfterSignIn', currentUrl)
 
-      // 跳转到登录页
-      router.push('/sign-in')
+      // 打开登录模态框而不是跳转页面
+      openSignIn()
     }
-  }, [isLoaded, isSignedIn, router])
+  }, [isLoaded, isSignedIn, openSignIn])
 
   // 加载状态
   if (!isLoaded) {

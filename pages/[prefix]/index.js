@@ -103,14 +103,43 @@ export async function getStaticPaths() {
     }
   }
 
-  const from = 'slug-paths'
-  const { allPages } = await getGlobalData({ from })
-  const paths = allPages
-    ?.filter(row => checkSlugHasNoSlash(row))
-    .map(row => ({ params: { prefix: row.slug } }))
-  return {
-    paths: paths,
-    fallback: true
+  try {
+    const from = 'slug-paths'
+    const { allPages } = await getGlobalData({ from })
+    
+    // 添加调试日志
+    console.log('[getStaticPaths] 获取到页面数量:', allPages?.length || 0)
+    
+    // 检查是否是错误数据（EmptyData返回的默认错误页面）
+    if (allPages?.length === 1 && allPages[0].slug === 'oops') {
+      console.error('[getStaticPaths] 检测到Notion数据获取失败，使用fallback模式')
+      return { 
+        paths: [], 
+        fallback: 'blocking' // 使用blocking确保页面能正确生成
+      }
+    }
+    
+    const validPages = allPages?.filter(row => checkSlugHasNoSlash(row)) || []
+    console.log('[getStaticPaths] 有效页面数量:', validPages.length)
+    
+    if (validPages.length > 0) {
+      console.log('[getStaticPaths] 前5个有效页面slug:', 
+        validPages.slice(0, 5).map(p => p.slug).join(', '))
+    }
+    
+    const paths = validPages.map(row => ({ params: { prefix: row.slug } }))
+    
+    return {
+      paths: paths,
+      fallback: 'blocking' // 改为blocking以确保页面能正确生成
+    }
+  } catch (error) {
+    console.error('[getStaticPaths] 获取路径时发生错误:', error.message)
+    console.error('[getStaticPaths] 完整错误:', error)
+    return { 
+      paths: [], 
+      fallback: 'blocking' 
+    }
   }
 }
 

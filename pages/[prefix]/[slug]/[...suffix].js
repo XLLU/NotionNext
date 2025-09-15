@@ -27,20 +27,48 @@ export async function getStaticPaths() {
     }
   }
 
-  const from = 'slug-paths'
-  const { allPages } = await getGlobalData({ from })
-  const paths = allPages
-    ?.filter(row => checkSlugHasMorThanTwoSlash(row))
-    .map(row => ({
+  try {
+    const from = 'slug-paths'
+    const { allPages } = await getGlobalData({ from })
+    
+    // 添加调试日志
+    console.log('[getStaticPaths-multi-level] 获取到页面数量:', allPages?.length || 0)
+    
+    // 检查是否是错误数据
+    if (allPages?.length === 1 && allPages[0].slug === 'oops') {
+      console.error('[getStaticPaths-multi-level] 检测到Notion数据获取失败，使用fallback模式')
+      return { 
+        paths: [], 
+        fallback: 'blocking' 
+      }
+    }
+    
+    const validPages = allPages?.filter(row => checkSlugHasMorThanTwoSlash(row)) || []
+    console.log('[getStaticPaths-multi-level] 有效多级页面数量:', validPages.length)
+    
+    const paths = validPages.map(row => ({
       params: {
         prefix: row.slug.split('/')[0],
         slug: row.slug.split('/')[1],
         suffix: row.slug.split('/').slice(2)
       }
     }))
-  return {
-    paths: paths,
-    fallback: true
+
+    if (paths.length > 0) {
+      console.log('[getStaticPaths-multi-level] 前3个多级路径:', 
+        paths.slice(0, 3).map(p => `${p.params.prefix}/${p.params.slug}/${p.params.suffix.join('/')}`).join(', '))
+    }
+
+    return {
+      paths: paths,
+      fallback: 'blocking' // 改为blocking以确保页面能正确生成
+    }
+  } catch (error) {
+    console.error('[getStaticPaths-multi-level] 获取路径时发生错误:', error.message)
+    return { 
+      paths: [], 
+      fallback: 'blocking' 
+    }
   }
 }
 

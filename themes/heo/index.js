@@ -45,6 +45,12 @@ import { Style } from './style'
 import AISummary from '@/components/AISummary'
 import ArticleExpirationNotice from '@/components/ArticleExpirationNotice'
 
+// Authentication components
+import { SignIn, SignUp } from '@clerk/nextjs'
+import { Banner } from './components/Banner'
+import { SignInForm } from './components/SignInForm'
+import { SignUpForm } from './components/SignUpForm'
+
 /**
  * 基础布局 采用上中下布局，移动端使用顶部侧边导航栏
  * @param props
@@ -500,6 +506,104 @@ const LayoutTagIndex = props => {
   )
 }
 
+/**
+ * 登录页面
+ * @param {*} props
+ * @returns
+ */
+const LayoutSignIn = props => {
+  const enableClerk = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+  const router = useRouter()
+  const redirectParam = router?.query?.redirectTo
+  const redirectTo = Array.isArray(redirectParam)
+    ? redirectParam[0]
+    : redirectParam || (isBrowser() && sessionStorage.getItem('redirectAfterSignIn')) || '/'
+  const title = siteConfig('HEO_SIGNIN_TITLE', '用户登录', CONFIG)
+  const description = siteConfig(
+    'HEO_SIGNIN_DESCRIPTION',
+    '欢迎回来！请登录您的账户以继续使用我们的服务。',
+    CONFIG
+  )
+
+  return (
+    <div id='signin-wrapper' className='min-h-screen bg-[#f7f9fe] dark:bg-[#18171d]'>
+      <Banner title={title} description={description} />
+
+      {/* Clerk 预置登录表单 */}
+      {enableClerk && (
+        <div className='flex justify-center py-8'>
+          <div className='w-full max-w-md'>
+            <SignIn
+              routing='path'
+              path='/sign-in'
+              afterSignInUrl={redirectTo}
+              afterSignUpUrl={redirectTo}
+              appearance={{
+                elements: {
+                  formButtonPrimary: 'bg-indigo-600 hover:bg-indigo-700 text-white',
+                  card: 'shadow-xl border-0 rounded-2xl bg-white dark:bg-[#1e1e1e]'
+                }
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* 自定义登录表单 (当 Clerk 未启用时使用) */}
+      {!enableClerk && <SignInForm />}
+    </div>
+  )
+}
+
+/**
+ * 注册页面
+ * @param {*} props
+ * @returns
+ */
+const LayoutSignUp = props => {
+  const enableClerk = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+  const router = useRouter()
+  const redirectParam = router?.query?.redirectTo
+  const redirectTo = Array.isArray(redirectParam)
+    ? redirectParam[0]
+    : redirectParam || (isBrowser() && sessionStorage.getItem('redirectAfterSignIn')) || '/'
+  const title = siteConfig('HEO_SIGNUP_TITLE', '用户注册', CONFIG)
+  const description = siteConfig(
+    'HEO_SIGNUP_DESCRIPTION',
+    '创建您的新账户，加入我们的社区，享受更多精彩内容和服务。',
+    CONFIG
+  )
+
+  return (
+    <div id='signup-wrapper' className='min-h-screen bg-[#f7f9fe] dark:bg-[#18171d]'>
+      <Banner title={title} description={description} />
+
+      {/* Clerk 预置注册表单 */}
+      {enableClerk && (
+        <div className='flex justify-center py-8'>
+          <div className='w-full max-w-md'>
+            <SignUp
+              routing='path'
+              path='/sign-up'
+              afterSignInUrl={redirectTo}
+              afterSignUpUrl={redirectTo}
+              appearance={{
+                elements: {
+                  formButtonPrimary: 'bg-indigo-600 hover:bg-indigo-700 text-white',
+                  card: 'shadow-xl border-0 rounded-2xl bg-white dark:bg-[#1e1e1e]'
+                }
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* 自定义注册表单 (当 Clerk 未启用时使用) */}
+      {!enableClerk && <SignUpForm />}
+    </div>
+  )
+}
+
 export {
   Layout404,
   LayoutArchive,
@@ -508,6 +612,8 @@ export {
   LayoutIndex,
   LayoutPostList,
   LayoutSearch,
+  LayoutSignIn,
+  LayoutSignUp,
   LayoutSlug,
   LayoutTagIndex,
   CONFIG as THEME_CONFIG

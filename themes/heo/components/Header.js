@@ -10,6 +10,7 @@ import RandomPostButton from './RandomPostButton'
 import ReadingProgress from './ReadingProgress'
 import SearchButton from './SearchButton'
 import SlideOver from './SlideOver'
+import UserButton from './UserButton'
 
 /**
  * 页头：顶部导航
@@ -175,6 +176,11 @@ const Header = props => {
               </div>
             )}
             <ReadingProgress />
+
+            {/* 用户登录控件 */}
+            <div className='hidden lg:block ml-2'>
+              <UserButton size="md" />
+            </div>
 
             {/* 移动端菜单按钮 */}
             <div

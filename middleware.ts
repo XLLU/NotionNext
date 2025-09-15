@@ -8,8 +8,8 @@ import BLOG from './blog.config'
  * Clerk 身份验证中间件
  */
 export const config = {
-  // 这里设置白名单，防止静态资源被拦截
-  matcher: ['/((?!.*\\..*|_next|/sign-in|/sign-up|/auth).*)', '/', '/(api|trpc)(.*)']
+  // 覆盖更多路径以便处理 .html 伪静态重写，但跳过 Next 内部与鉴权路由
+  matcher: ['/((?!_next|/sign-in|/sign-up|/auth).*)', '/', '/(api|trpc)(.*)']
 }
 
 // 限制登录访问的路由
@@ -34,6 +34,14 @@ const isTenantAdminRoute = createRouteMatcher([
  */
 // eslint-disable-next-line @typescript-eslint/require-await, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
 const noAuthMiddleware = async (req: NextRequest, ev: any) => {
+  // 对于以 .html 结尾的伪静态路径，在这里统一去掉 .html，避免 next.config.js 中 rewrites 失效导致 404
+  const pathname = req.nextUrl.pathname
+  if (pathname.endsWith('.html')) {
+    const url = req.nextUrl.clone()
+    url.pathname = pathname.replace(/\.html$/, '')
+    return NextResponse.rewrite(url)
+  }
+
   // 如果没有配置 Clerk 相关环境变量，返回一个默认响应或者继续处理请求
   if (BLOG['UUID_REDIRECT']) {
     let redirectJson: Record<string, string> = {}
@@ -65,6 +73,14 @@ const noAuthMiddleware = async (req: NextRequest, ev: any) => {
  */
 const authMiddleware = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
   ? clerkMiddleware((auth, req) => {
+      // 处理 .html 伪静态重写，防止由于环境变量或平台原因导致 next.config.js 中 rewrites 未生效
+      const pathname = req.nextUrl.pathname
+      if (pathname.endsWith('.html')) {
+        const url = req.nextUrl.clone()
+        url.pathname = pathname.replace(/\.html$/, '')
+        return NextResponse.rewrite(url)
+      }
+
       const { userId } = auth()
       // 处理 /dashboard 路由的登录保护
       if (isTenantRoute(req)) {

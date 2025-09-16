@@ -18,7 +18,7 @@
 # misc
 .DS_Store
 *.pem
-CLAUDE.local.md
+CLAUDE.md
 AGENTS.md
 
 # debug

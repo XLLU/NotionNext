@@ -16,10 +16,11 @@ const PrefixSlug = props => {
 }
 
 export async function getStaticPaths() {
+  // 在开发环境下仍然使用空路径，但生产环境确保生成正确的路径
   if (!BLOG.isProd) {
     return {
       paths: [],
-      fallback: true
+      fallback: 'blocking'
     }
   }
 
@@ -33,14 +34,9 @@ export async function getStaticPaths() {
     // 检查是否是错误数据
     if (!allPages || allPages.length === 0 || (allPages?.length === 1 && allPages[0].slug === 'oops')) {
       console.error('[getStaticPaths-two-level] 检测到Notion数据获取失败，使用fallback模式')
-      // 生产环境下，如果无法获取数据，返回一些基本的两级路径避免全部404
-      const fallbackPaths = BLOG.isProd ? [
-        { params: { prefix: 'article', slug: 'welcome' } },
-        { params: { prefix: 'docs', slug: 'getting-started' } },
-        { params: { prefix: 'blog', slug: 'first-post' } }
-      ] : []
+      // 数据获取失败时，使用fallback模式让Next.js动态生成页面
       return {
-        paths: fallbackPaths,
+        paths: [],
         fallback: 'blocking'
       }
     }
@@ -69,14 +65,9 @@ export async function getStaticPaths() {
     }
   } catch (error) {
     console.error('[getStaticPaths-two-level] 获取路径时发生错误:', error.message)
-    // 生产环境下提供基本的fallback路径
-    const fallbackPaths = BLOG.isProd ? [
-      { params: { prefix: 'article', slug: 'welcome' } },
-      { params: { prefix: 'docs', slug: 'getting-started' } },
-      { params: { prefix: 'blog', slug: 'first-post' } }
-    ] : []
+    // 发生错误时，使用fallback模式动态生成
     return {
-      paths: fallbackPaths,
+      paths: [],
       fallback: 'blocking'
     }
   }

@@ -34,6 +34,16 @@ export async function getStaticProps() {
     props.NOTION_CONFIG.HEO_SITE_TIME_TITLE = 'Site Days:'
   }
   
+  // 确保siteInfo存在，防止构建时出错
+  if (!props.siteInfo && props.allPages && props.allPages.length > 0) {
+    // 从首页数据中获取siteInfo基本信息
+    props.siteInfo = {
+      title: props.NOTION_CONFIG?.TITLE || 'FREEMIUM',
+      description: props.NOTION_CONFIG?.DESCRIPTION || 'Open Source and AI value sharing',
+      pageCover: props.NOTION_CONFIG?.HOME_BANNER_IMAGE
+    }
+  }
+  
   const POST_PREVIEW_LINES = siteConfig(
     'POST_PREVIEW_LINES',
     12,

@@ -65,11 +65,23 @@ export default function UserButton({ className = '', size = 'md' }) {
   return (
     <Menu as="div" className={`relative inline-block text-left ${className}`}>
       <div>
-        <Menu.Button className={`
-          ${config.avatar} rounded-full border-2 border-gray-200 dark:border-gray-600
-          hover:border-gray-300 dark:hover:border-gray-500 focus:outline-none
-          focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200
-        `}>
+        <Menu.Button
+          className={`
+            ${config.avatar} rounded-full border-2 border-gray-200 dark:border-gray-600
+            hover:border-gray-300 dark:hover:border-gray-500 focus:outline-none
+            focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200
+          `}
+          onClick={(e) => {
+            // 单击直接跳转到个人中心页面
+            e.preventDefault()
+            window.location.href = '/user/profile'
+          }}
+          onContextMenu={(e) => {
+            // 右键显示下拉菜单（阻止默认右键菜单）
+            e.preventDefault()
+            // 手动触发 Menu 的打开状态（需要额外处理）
+          }}
+        >
           <img
             className="w-full h-full rounded-full object-cover"
             src={user?.imageUrl || '/avatar/default.svg'}

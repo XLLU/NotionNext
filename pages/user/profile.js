@@ -2,9 +2,6 @@ import { getGlobalData } from '@/lib/db/getSiteData'
 import { useGlobal } from '@/lib/global'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
-import { Style } from '@/themes/heo/style'
-import Header from '@/themes/heo/components/Header'
-import Footer from '@/themes/heo/components/Footer'
 
 /**
  * 个人中心页面
@@ -29,89 +26,62 @@ export default function UserProfile(props) {
   // 加载状态
   if (!isLoaded) {
     return (
-      <ProfileLayout {...props}>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto"></div>
-            <p className="mt-4 text-gray-600 dark:text-gray-400">加载中...</p>
-          </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">加载中...</p>
         </div>
-      </ProfileLayout>
+      </div>
     )
   }
 
   // 未登录状态（这里通常不会显示，因为会重定向）
   if (!isSignedIn) {
     return (
-      <ProfileLayout {...props}>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <i className="fas fa-lock text-6xl text-gray-400 mb-4"></i>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">需要登录</h1>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">请先登录以访问个人中心</p>
-            <button
-              onClick={() => openSignIn()}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              立即登录
-            </button>
-          </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <i className="fas fa-lock text-6xl text-gray-400 mb-4"></i>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">需要登录</h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">请先登录以访问个人中心</p>
+          <button
+            onClick={() => openSignIn()}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            立即登录
+          </button>
         </div>
-      </ProfileLayout>
+      </div>
     )
   }
 
   // 已登录状态 - 显示个人中心内容
   return (
-    <ProfileLayout {...props}>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* 页面标题 */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">个人中心</h1>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">管理您的账户信息和偏好设置</p>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* 页面标题 */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">个人中心</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">管理您的账户信息和偏好设置</p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* 左侧：用户信息卡片 */}
+          <div className="lg:col-span-1">
+            <UserInfoCard user={user} />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* 左侧：用户信息卡片 */}
-            <div className="lg:col-span-1">
-              <UserInfoCard user={user} />
-            </div>
-
-            {/* 右侧：功能面板 */}
-            <div className="lg:col-span-2 space-y-6">
-              <AccountManagementCard />
-              <SecurityCard />
-              <PreferencesCard />
-            </div>
+          {/* 右侧：功能面板 */}
+          <div className="lg:col-span-2 space-y-6">
+            <AccountManagementCard />
+            <SecurityCard />
+            <PreferencesCard />
           </div>
         </div>
       </div>
-    </ProfileLayout>
-  )
-}
-
-/**
- * Profile page layout - simpler than LayoutBase, no sidebar
- */
-function ProfileLayout({ children, ...props }) {
-  return (
-    <div className="bg-[#f7f9fe] dark:bg-[#18171d] h-full min-h-screen flex flex-col">
-      <Style />
-
-      {/* Header */}
-      <Header {...props} />
-
-      {/* Main content */}
-      <main className="flex-grow">
-        {children}
-      </main>
-
-      {/* Footer */}
-      <Footer {...props} />
     </div>
   )
 }
+
 
 /**
  * 用户信息卡片

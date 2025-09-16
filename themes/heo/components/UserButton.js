@@ -10,23 +10,23 @@ import { Fragment } from 'react'
  * - 已登录：显示用户头像和下拉菜单
  */
 export default function UserButton({ className = '', size = 'md' }) {
-  const { isLoaded, isSignedIn, user, openSignIn, openUserProfile, signOut } = useGlobal()
+  const { isLoaded, isSignedIn, user, openSignIn, openUserProfile, signOut, locale } = useGlobal()
 
   // 尺寸样式配置
   const sizeConfig = {
     sm: {
       avatar: 'w-6 h-6',
-      text: 'text-xs px-2 py-1',
+      text: 'text-xs px-2 py-0.5',
       button: 'w-6 h-6'
     },
     md: {
       avatar: 'w-8 h-8',
-      text: 'text-sm px-3 py-1.5',
+      text: 'text-sm px-3 py-1',
       button: 'w-8 h-8'
     },
     lg: {
       avatar: 'w-10 h-10',
-      text: 'text-base px-4 py-2',
+      text: 'text-base px-4 py-1.5',
       button: 'w-10 h-10'
     }
   }
@@ -49,14 +49,15 @@ export default function UserButton({ className = '', size = 'md' }) {
         onClick={() => openSignIn()}
         className={`
           ${config.text} ${className}
-          flex items-center gap-2 rounded-full border border-gray-200 dark:border-gray-600
+          flex items-center gap-1.5 rounded-full border border-gray-200 dark:border-gray-600
           bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200
           hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-500
           transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+          whitespace-nowrap min-w-fit
         `}
       >
-        <i className="fas fa-sign-in-alt"></i>
-        <span className="hidden sm:block">登录</span>
+        <i className="fas fa-sign-in-alt text-xs"></i>
+        <span className="hidden sm:inline-block">{locale.COMMON.SIGN_IN}</span>
       </button>
     )
   }
@@ -171,7 +172,7 @@ export default function UserButton({ className = '', size = 'md' }) {
  * 专门为移动端侧边抽屉设计的用户状态控件
  */
 export function UserButtonMobile({ className = '' }) {
-  const { isLoaded, isSignedIn, user, openSignIn, openUserProfile, signOut } = useGlobal()
+  const { isLoaded, isSignedIn, user, openSignIn, openUserProfile, signOut, locale } = useGlobal()
 
   // 加载状态
   if (!isLoaded) {
@@ -190,21 +191,21 @@ export function UserButtonMobile({ className = '' }) {
   if (!isSignedIn) {
     return (
       <div className={`space-y-2 ${className}`}>
-        <div className="text-sm font-medium text-gray-900 dark:text-white">用户中心</div>
+        <div className="text-sm font-medium text-gray-900 dark:text-white">{locale.COMMON.USER_CENTER || 'User Center'}</div>
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() => openSignIn()}
             className="duration-200 hover:text-white hover:shadow-md flex cursor-pointer justify-center items-center px-3 py-2 border dark:border-gray-600 bg-white hover:bg-blue-600 dark:bg-[#1e1e1e] rounded-lg text-sm"
           >
             <i className="fas fa-sign-in-alt mr-2"></i>
-            登录
+            {locale.COMMON.SIGN_IN}
           </button>
           <Link
             href="/sign-up"
             className="duration-200 hover:text-white hover:shadow-md flex cursor-pointer justify-center items-center px-3 py-2 border dark:border-gray-600 bg-white hover:bg-green-600 dark:bg-[#1e1e1e] rounded-lg text-sm"
           >
             <i className="fas fa-user-plus mr-2"></i>
-            注册
+            {locale.COMMON.SIGN_UP || 'Sign Up'}
           </Link>
         </div>
       </div>

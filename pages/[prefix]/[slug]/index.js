@@ -26,16 +26,22 @@ export async function getStaticPaths() {
   try {
     const from = 'slug-paths'
     const { allPages } = await getGlobalData({ from })
-    
+
     // 添加调试日志
     console.log('[getStaticPaths-two-level] 获取到页面数量:', allPages?.length || 0)
-    
+
     // 检查是否是错误数据
-    if (allPages?.length === 1 && allPages[0].slug === 'oops') {
+    if (!allPages || allPages.length === 0 || (allPages?.length === 1 && allPages[0].slug === 'oops')) {
       console.error('[getStaticPaths-two-level] 检测到Notion数据获取失败，使用fallback模式')
-      return { 
-        paths: [], 
-        fallback: 'blocking' 
+      // 生产环境下，如果无法获取数据，返回一些基本的两级路径避免全部404
+      const fallbackPaths = BLOG.isProd ? [
+        { params: { prefix: 'article', slug: 'welcome' } },
+        { params: { prefix: 'docs', slug: 'getting-started' } },
+        { params: { prefix: 'blog', slug: 'first-post' } }
+      ] : []
+      return {
+        paths: fallbackPaths,
+        fallback: 'blocking'
       }
     }
 
@@ -43,13 +49,13 @@ export async function getStaticPaths() {
     // 最终用户可以通过  [domain]/[prefix]/[slug] 路径访问，即这里的 [domain]/article/test
     const validPages = allPages?.filter(row => checkSlugHasOneSlash(row)) || []
     console.log('[getStaticPaths-two-level] 有效两级页面数量:', validPages.length)
-    
+
     const paths = validPages.map(row => ({
       params: { prefix: row.slug.split('/')[0], slug: row.slug.split('/')[1] }
     }))
 
     if (paths.length > 0) {
-      console.log('[getStaticPaths-two-level] 前3个两级路径:', 
+      console.log('[getStaticPaths-two-level] 前3个两级路径:',
         paths.slice(0, 3).map(p => `${p.params.prefix}/${p.params.slug}`).join(', '))
     }
 
@@ -63,9 +69,15 @@ export async function getStaticPaths() {
     }
   } catch (error) {
     console.error('[getStaticPaths-two-level] 获取路径时发生错误:', error.message)
-    return { 
-      paths: [], 
-      fallback: 'blocking' 
+    // 生产环境下提供基本的fallback路径
+    const fallbackPaths = BLOG.isProd ? [
+      { params: { prefix: 'article', slug: 'welcome' } },
+      { params: { prefix: 'docs', slug: 'getting-started' } },
+      { params: { prefix: 'blog', slug: 'first-post' } }
+    ] : []
+    return {
+      paths: fallbackPaths,
+      fallback: 'blocking'
     }
   }
 }

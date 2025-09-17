@@ -25,78 +25,115 @@ const EnIndex = props => {
 export async function getStaticProps() {
   const locale = 'en' // 强制使用英文语言 - 对应.env.local中的en:前缀
   const from = 'index-en'
-  const props = await getGlobalData({ from, locale })
-  
-  // 为英文页面设置语言和配置
-  if (props?.NOTION_CONFIG) {
-    props.NOTION_CONFIG.LANG = 'en-US' // 设置语言包为en-US
-    props.NOTION_CONFIG.HEO_POST_COUNT_TITLE = 'Posts:'
-    props.NOTION_CONFIG.HEO_SITE_TIME_TITLE = 'Site Days:'
-  }
-  
-  // 确保siteInfo存在，防止构建时出错
-  if (!props.siteInfo && props.allPages && props.allPages.length > 0) {
-    // 从首页数据中获取siteInfo基本信息
-    props.siteInfo = {
-      title: props.NOTION_CONFIG?.TITLE || 'FREEMIUM',
-      description: props.NOTION_CONFIG?.DESCRIPTION || 'Open Source and AI value sharing',
-      pageCover: props.NOTION_CONFIG?.HOME_BANNER_IMAGE
+
+  try {
+    const props = await getGlobalData({ from, locale })
+
+    if (props?.NOTION_CONFIG) {
+      props.NOTION_CONFIG.LANG = 'en-US'
+      props.NOTION_CONFIG.HEO_POST_COUNT_TITLE = 'Posts:'
+      props.NOTION_CONFIG.HEO_SITE_TIME_TITLE = 'Site Days:'
     }
-  }
-  
-  const POST_PREVIEW_LINES = siteConfig(
-    'POST_PREVIEW_LINES',
-    12,
-    props?.NOTION_CONFIG
-  )
-  props.posts = props.allPages?.filter(
-    page => page.type === 'Post' && page.status === 'Published'
-  )
 
-  // 处理分页
-  if (siteConfig('POST_LIST_STYLE') === 'scroll') {
-    // 滚动列表默认给前端返回所有数据
-  } else if (siteConfig('POST_LIST_STYLE') === 'page') {
-    props.posts = props.posts?.slice(
-      0,
-      siteConfig('POSTS_PER_PAGE', 12, props?.NOTION_CONFIG)
-    )
-  }
-
-  // 预览文章内容
-  if (siteConfig('POST_LIST_PREVIEW', false, props?.NOTION_CONFIG)) {
-    for (const i in props.posts) {
-      const post = props.posts[i]
-      if (post.password && post.password !== '') {
-        continue
+    if (!props.siteInfo && props.allPages && props.allPages.length > 0) {
+      props.siteInfo = {
+        title: props.NOTION_CONFIG?.TITLE || 'FREEMIUM',
+        description:
+          props.NOTION_CONFIG?.DESCRIPTION || 'Open Source and AI value sharing',
+        pageCover: props.NOTION_CONFIG?.HOME_BANNER_IMAGE
       }
-      post.blockMap = await getPostBlocks(post.id, 'slug', POST_PREVIEW_LINES)
     }
-  }
 
-  // 生成RSS
-  if (BLOG.isProd) {
-    await generateRss(props)
-    await generateSitemapXml(props)
-    await generateRobotsTxt()
-    // 重定向配置
-    if (siteConfig('UUID_REDIRECT', false, props?.NOTION_CONFIG)) {
-      await generateRedirectJson(props.allPages)
+    const POST_PREVIEW_LINES = siteConfig(
+      'POST_PREVIEW_LINES',
+      12,
+      props?.NOTION_CONFIG
+    )
+    props.posts = props.allPages?.filter(
+      page => page.type === 'Post' && page.status === 'Published'
+    )
+
+    if (siteConfig('POST_LIST_STYLE') === 'scroll') {
+      // 滚动列表默认给前端返回所有数据
+    } else if (siteConfig('POST_LIST_STYLE') === 'page') {
+      props.posts = props.posts?.slice(
+        0,
+        siteConfig('POSTS_PER_PAGE', 12, props?.NOTION_CONFIG)
+      )
     }
-    // Algolia 检查数据
-    await checkDataFromAlgolia(props)
-  }
 
-  delete props.allPages
-  return {
-    props,
-    revalidate: process.env.EXPORT
-      ? undefined
-      : siteConfig(
-          'NEXT_REVALIDATE_SECOND',
-          BLOG.NEXT_REVALIDATE_SECOND,
-          props.NOTION_CONFIG
-        )
+    if (siteConfig('POST_LIST_PREVIEW', false, props?.NOTION_CONFIG)) {
+      for (const i in props.posts) {
+        const post = props.posts[i]
+        if (post.password && post.password !== '') {
+          continue
+        }
+        post.blockMap = await getPostBlocks(post.id, 'slug', POST_PREVIEW_LINES)
+      }
+    }
+
+    if (siteConfig('isProd', BLOG.isProd, props?.NOTION_CONFIG)) {
+      try {
+        await generateRss(props)
+      } catch (error) {
+        console.error('[index-en] generateRss failed', { error })
+      }
+      try {
+        await generateSitemapXml(props)
+      } catch (error) {
+        console.error('[index-en] generateSitemapXml failed', { error })
+      }
+      try {
+        await generateRobotsTxt(props)
+      } catch (error) {
+        console.error('[index-en] generateRobotsTxt failed', { error })
+      }
+      if (siteConfig('UUID_REDIRECT', false, props?.NOTION_CONFIG)) {
+        try {
+          await generateRedirectJson(props.allPages)
+        } catch (error) {
+          console.error('[index-en] generateRedirectJson failed', { error })
+        }
+      }
+      try {
+        await checkDataFromAlgolia(props)
+      } catch (error) {
+        console.error('[index-en] checkDataFromAlgolia failed', { error })
+      }
+    }
+
+    delete props.allPages
+    return {
+      props,
+      revalidate: process.env.EXPORT
+        ? undefined
+        : siteConfig(
+            'NEXT_REVALIDATE_SECOND',
+            BLOG.NEXT_REVALIDATE_SECOND,
+            props.NOTION_CONFIG
+          )
+    }
+  } catch (error) {
+    console.error('[index-en] getStaticProps failed', { error })
+
+    const fallbackProps = {
+      siteInfo: {
+        title: BLOG.TITLE || 'NotionNext',
+        description: BLOG.BIO || 'A NotionNext site',
+        pageCover: BLOG.HOME_BANNER_IMAGE || '/bg_image.jpg',
+        icon: BLOG.BLOG_FAVICON || '/favicon.ico'
+      },
+      posts: [],
+      NOTION_CONFIG: { LANG: 'en-US' }
+    }
+
+    return {
+      props: fallbackProps,
+      revalidate: siteConfig(
+        'NEXT_REVALIDATE_SECOND',
+        BLOG.NEXT_REVALIDATE_SECOND
+      )
+    }
   }
 }
 

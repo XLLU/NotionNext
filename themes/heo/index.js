@@ -517,7 +517,7 @@ const LayoutSignIn = props => {
   const redirectParam = router?.query?.redirectTo
   const redirectTo = Array.isArray(redirectParam)
     ? redirectParam[0]
-    : redirectParam || (isBrowser() && sessionStorage.getItem('redirectAfterSignIn')) || '/'
+    : redirectParam || (isBrowser && sessionStorage.getItem('redirectAfterSignIn')) || '/'
   const title = siteConfig('HEO_SIGNIN_TITLE', '用户登录', CONFIG)
   const description = siteConfig(
     'HEO_SIGNIN_DESCRIPTION',
@@ -566,7 +566,7 @@ const LayoutSignUp = props => {
   const redirectParam = router?.query?.redirectTo
   const redirectTo = Array.isArray(redirectParam)
     ? redirectParam[0]
-    : redirectParam || (isBrowser() && sessionStorage.getItem('redirectAfterSignIn')) || '/'
+    : redirectParam || (isBrowser && sessionStorage.getItem('redirectAfterSignIn')) || '/'
   const title = siteConfig('HEO_SIGNUP_TITLE', '用户注册', CONFIG)
   const description = siteConfig(
     'HEO_SIGNUP_DESCRIPTION',

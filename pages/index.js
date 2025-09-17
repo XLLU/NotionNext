@@ -24,64 +24,114 @@ const Index = props => {
  */
 export async function getStaticProps(req) {
   const { locale } = req
-  const from = 'index'
-  const props = await getGlobalData({ from, locale })
-  const POST_PREVIEW_LINES = siteConfig(
-    'POST_PREVIEW_LINES',
-    12,
-    props?.NOTION_CONFIG
-  )
-  props.posts = props.allPages?.filter(
-    page => page.type === 'Post' && page.status === 'Published'
-  )
+  const from = locale ? `index-${locale}` : 'index'
 
-  // 处理分页
-  if (siteConfig('POST_LIST_STYLE') === 'scroll') {
-    // 滚动列表默认给前端返回所有数据
-  } else if (siteConfig('POST_LIST_STYLE') === 'page') {
-    props.posts = props.posts?.slice(
-      0,
-      siteConfig('POSTS_PER_PAGE', 12, props?.NOTION_CONFIG)
+  try {
+    const props = await getGlobalData({ from, locale })
+
+    const POST_PREVIEW_LINES = siteConfig(
+      'POST_PREVIEW_LINES',
+      12,
+      props?.NOTION_CONFIG
     )
-  }
 
-  // 预览文章内容
-  if (siteConfig('POST_LIST_PREVIEW', false, props?.NOTION_CONFIG)) {
-    for (const i in props.posts) {
-      const post = props.posts[i]
-      if (post.password && post.password !== '') {
-        continue
-      }
-      post.blockMap = await getPostBlocks(post.id, 'slug', POST_PREVIEW_LINES)
+    props.posts = props.allPages?.filter(
+      page => page.type === 'Post' && page.status === 'Published'
+    )
+
+    if (siteConfig('POST_LIST_STYLE') === 'scroll') {
+      // 滚动列表默认给前端返回所有数据
+    } else if (siteConfig('POST_LIST_STYLE') === 'page') {
+      props.posts = props.posts?.slice(
+        0,
+        siteConfig('POSTS_PER_PAGE', 12, props?.NOTION_CONFIG)
+      )
     }
-  }
 
-  // 生成robotTxt
-  generateRobotsTxt(props)
-  // 生成Feed订阅
-  generateRss(props)
-  // 生成
-  generateSitemapXml(props)
-  // 检查数据是否需要从algolia删除
-  checkDataFromAlgolia(props)
-  if (siteConfig('UUID_REDIRECT', false, props?.NOTION_CONFIG)) {
-    // 生成重定向 JSON
-    generateRedirectJson(props)
-  }
+    if (siteConfig('POST_LIST_PREVIEW', false, props?.NOTION_CONFIG)) {
+      for (const i in props.posts) {
+        const post = props.posts[i]
+        if (post.password && post.password !== '') {
+          continue
+        }
+        post.blockMap = await getPostBlocks(post.id, 'slug', POST_PREVIEW_LINES)
+      }
+    }
 
-  // 生成全文索引 - 仅在 yarn build 时执行 && process.env.npm_lifecycle_event === 'build'
+    if (siteConfig('isProd', BLOG.isProd, props?.NOTION_CONFIG)) {
+      try {
+        generateRobotsTxt(props)
+      } catch (error) {
+        console.error('[index] generateRobotsTxt failed', { from, locale, error })
+      }
+      try {
+        generateRss(props)
+      } catch (error) {
+        console.error('[index] generateRss failed', { from, locale, error })
+      }
+      try {
+        generateSitemapXml(props)
+      } catch (error) {
+        console.error('[index] generateSitemapXml failed', {
+          from,
+          locale,
+          error
+        })
+      }
+      try {
+        checkDataFromAlgolia(props)
+      } catch (error) {
+        console.error('[index] checkDataFromAlgolia failed', {
+          from,
+          locale,
+          error
+        })
+      }
+      if (siteConfig('UUID_REDIRECT', false, props?.NOTION_CONFIG)) {
+        try {
+          generateRedirectJson(props)
+        } catch (error) {
+          console.error('[index] generateRedirectJson failed', {
+            from,
+            locale,
+            error
+          })
+        }
+      }
+    }
 
-  delete props.allPages
+    delete props.allPages
 
-  return {
-    props,
-    revalidate: process.env.EXPORT
-      ? undefined
-      : siteConfig(
-          'NEXT_REVALIDATE_SECOND',
-          BLOG.NEXT_REVALIDATE_SECOND,
-          props.NOTION_CONFIG
-        )
+    return {
+      props,
+      revalidate: process.env.EXPORT
+        ? undefined
+        : siteConfig(
+            'NEXT_REVALIDATE_SECOND',
+            BLOG.NEXT_REVALIDATE_SECOND,
+            props.NOTION_CONFIG
+          )
+    }
+  } catch (error) {
+    console.error('[index] getStaticProps failed', { from, locale, error })
+
+    const fallbackProps = {
+      siteInfo: {
+        title: BLOG.TITLE || 'NotionNext',
+        description: BLOG.BIO || 'A NotionNext site',
+        pageCover: BLOG.HOME_BANNER_IMAGE || '/bg_image.jpg',
+        icon: BLOG.BLOG_FAVICON || '/favicon.ico'
+      },
+      posts: []
+    }
+
+    return {
+      props: fallbackProps,
+      revalidate: siteConfig(
+        'NEXT_REVALIDATE_SECOND',
+        BLOG.NEXT_REVALIDATE_SECOND
+      )
+    }
   }
 }
 

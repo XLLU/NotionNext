@@ -1,7 +1,6 @@
 import SEO from '@/components/SEO'
 import { useGlobal } from '@/lib/global'
-import { useEffect } from 'react'
-import { ClerkLoaded, ClerkLoading, SignedIn, SignedOut } from '@clerk/nextjs'
+import { useEffect, useState } from 'react'
 
 /**
  * 个人中心页面
@@ -12,42 +11,89 @@ export default function UserProfile(props) {
   const { isLoaded, isSignedIn, openSignIn, locale } = global
   const userText = locale?.USER || {}
   const clerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY)
+  const [hasMounted, setHasMounted] = useState(false)
 
-  const loadingView = (
-    <LoadingState message={userText.LOADING ?? '加载中...'} />
-  )
+  useEffect(() => {
+    setHasMounted(true)
+  }, [])
 
-  const signedOutView = (
-    <SignInPrompt
-      messageTitle={userText.LOGIN_REQUIRED ?? '需要登录'}
-      messageBody={userText.LOGIN_TO_ACCESS ?? '请先登录以访问个人中心'}
-      ctaLabel={userText.LOGIN_NOW ?? '立即登录'}
-      onSignIn={openSignIn}
-      autoOpen={clerkEnabled}
-    />
-  )
+  const loadingMessage = userText.LOADING ?? '加载中...'
+
+  const signOutTitle = userText.LOGIN_REQUIRED ?? '需要登录'
+  const signOutBody = userText.LOGIN_TO_ACCESS ?? '请先登录以访问个人中心'
+  const signOutCta = userText.LOGIN_NOW ?? '立即登录'
 
   const signedInView = <ProfileLayout />
 
+  const renderStatic = () => (
+    <>
+      <SEO {...props} />
+      <ProfileLayout forceStatic />
+    </>
+  )
+
   if (clerkEnabled) {
+    if (!hasMounted) {
+      return renderStatic()
+    }
+
+    if (!isLoaded) {
+      return (
+        <>
+          <SEO {...props} />
+          <ProfileLayout forceStatic />
+          <LoadingOverlay message={loadingMessage} />
+        </>
+      )
+    }
+
+    if (!isSignedIn) {
+      return (
+        <>
+          <SEO {...props} />
+          <ProfileLayout forceStatic />
+          <SignInPrompt
+            messageTitle={signOutTitle}
+            messageBody={signOutBody}
+            ctaLabel={signOutCta}
+            onSignIn={openSignIn}
+            autoOpen
+          />
+        </>
+      )
+    }
+
     return (
       <>
         <SEO {...props} />
-        <ClerkLoading>{loadingView}</ClerkLoading>
-        <ClerkLoaded>
-          <SignedIn>{signedInView}</SignedIn>
-          <SignedOut>{signedOutView}</SignedOut>
-        </ClerkLoaded>
+        {signedInView}
       </>
     )
   }
 
   if (!isLoaded) {
-    return loadingView
+    return (
+      <>
+        <SEO {...props} />
+        <ProfileLayout forceStatic />
+        <LoadingOverlay message={loadingMessage} />
+      </>
+    )
   }
 
   if (!isSignedIn) {
-    return signedOutView
+    return (
+      <>
+        <SEO {...props} />
+        <ProfileLayout forceStatic />
+        <SignInPrompt
+          messageTitle={signOutTitle}
+          messageBody={signOutBody}
+          ctaLabel={signOutCta}
+          onSignIn={openSignIn}
+        />
+      </>
+    )
   }
 
   return (
@@ -58,12 +104,12 @@ export default function UserProfile(props) {
   )
 }
 
-function LoadingState({ message }) {
+function LoadingOverlay({ message }) {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-black/70 backdrop-blur">
+      <div className="text-center text-gray-700 dark:text-gray-200">
         <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto"></div>
-        <p className="mt-4 text-gray-600 dark:text-gray-400">{message}</p>
+        <p className="mt-4">{message}</p>
       </div>
     </div>
   )
@@ -81,13 +127,13 @@ function SignInPrompt({ messageTitle, messageBody, ctaLabel, onSignIn, autoOpen 
   }, [autoOpen, onSignIn])
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <i className="fas fa-lock text-6xl text-gray-400 mb-4"></i>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl px-8 py-10 max-w-md text-center">
+        <i className="fas fa-lock text-5xl text-blue-500 mb-4"></i>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
           {messageTitle}
         </h1>
-        <p className="text-gray-600 dark:text-gray-400 mb-4">{messageBody}</p>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">{messageBody}</p>
         <button
           onClick={() => onSignIn?.()}
           className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -99,8 +145,9 @@ function SignInPrompt({ messageTitle, messageBody, ctaLabel, onSignIn, autoOpen 
   )
 }
 
-function ProfileLayout() {
+function ProfileLayout({ forceStatic = false }) {
   const { locale, user } = useGlobal()
+  const activeUser = forceStatic ? null : user
   const userText = locale?.USER || {}
 
   return (
@@ -117,13 +164,13 @@ function ProfileLayout() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-1">
-            <UserInfoCard user={user} />
+            <UserInfoCard user={activeUser} forceStatic={forceStatic} />
           </div>
 
           <div className="lg:col-span-2 space-y-6">
-            <AccountManagementCard />
-            <SecurityCard />
-            <PreferencesCard />
+            <AccountManagementCard forceStatic={forceStatic} />
+            <SecurityCard user={activeUser} forceStatic={forceStatic} />
+            <PreferencesCard forceStatic={forceStatic} />
           </div>
         </div>
       </div>
@@ -131,12 +178,20 @@ function ProfileLayout() {
   )
 }
 
-function UserInfoCard({ user }) {
+function UserInfoCard({ user, forceStatic }) {
   const { locale, lang } = useGlobal()
   const userText = locale?.USER || {}
   const unknownText =
     userText.UNKNOWN ?? (lang?.startsWith('en') ? 'Unknown' : '未知')
   const displayLang = lang || 'zh-CN'
+  const nameFallback = forceStatic
+    ? userText.DEFAULT_NAME ?? '用户'
+    : user?.fullName || user?.firstName || userText.DEFAULT_NAME || '用户'
+  const emailDisplay = forceStatic ? '' : user?.email
+  const createdAtDisplay =
+    !forceStatic && user?.createdAt
+      ? new Date(user.createdAt).toLocaleDateString(displayLang)
+      : unknownText
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
@@ -154,37 +209,39 @@ function UserInfoCard({ user }) {
         </div>
 
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
-          {user?.fullName || user?.firstName || userText.DEFAULT_NAME || '用户'}
+          {nameFallback}
         </h2>
-        <p className="text-gray-600 dark:text-gray-400 mb-2">{user?.email}</p>
+        {emailDisplay ? (
+          <p className="text-gray-600 dark:text-gray-400 mb-2">{emailDisplay}</p>
+        ) : null}
         {user?.phoneNumber && (
           <p className="text-sm text-gray-500 dark:text-gray-500">
             {user.phoneNumber}
           </p>
         )}
 
-        <div className="mt-4 flex justify-center">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-            <i className="fas fa-check-circle mr-1"></i>
-            {userText.VERIFIED ?? '已验证'}
-          </span>
-        </div>
+        {!forceStatic && user ? (
+          <div className="mt-4 flex justify-center">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+              <i className="fas fa-check-circle mr-1"></i>
+              {userText.VERIFIED ?? '已验证'}
+            </span>
+          </div>
+        ) : null}
 
         <div className="mt-4 text-sm text-gray-500 dark:text-gray-400">
           <i className="fas fa-calendar-alt mr-1"></i>
-          {userText.JOINED ?? '加入于'}{' '}
-          {user?.createdAt
-            ? new Date(user.createdAt).toLocaleDateString(displayLang)
-            : unknownText}
+          {userText.JOINED ?? '加入于'} {createdAtDisplay}
         </div>
       </div>
     </div>
   )
 }
 
-function AccountManagementCard() {
+function AccountManagementCard({ forceStatic }) {
   const { openUserProfile, locale } = useGlobal()
   const userText = locale?.USER || {}
+  const disabled = Boolean(forceStatic)
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
@@ -194,8 +251,13 @@ function AccountManagementCard() {
       </h3>
       <div className="space-y-3">
         <button
-          onClick={() => openUserProfile()}
-          className="w-full flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          onClick={disabled ? undefined : () => openUserProfile()}
+          disabled={disabled}
+          className={`w-full flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-600 transition-colors ${
+            disabled
+              ? 'cursor-not-allowed opacity-60'
+              : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+          }`}
         >
           <div className="flex items-center">
             <i className="fas fa-edit text-blue-500 mr-3"></i>
@@ -207,8 +269,13 @@ function AccountManagementCard() {
         </button>
 
         <button
-          onClick={() => openUserProfile()}
-          className="w-full flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          onClick={disabled ? undefined : () => openUserProfile()}
+          disabled={disabled}
+          className={`w-full flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-600 transition-colors ${
+            disabled
+              ? 'cursor-not-allowed opacity-60'
+              : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+          }`}
         >
           <div className="flex items-center">
             <i className="fas fa-key text-green-500 mr-3"></i>
@@ -223,8 +290,9 @@ function AccountManagementCard() {
   )
 }
 
-function SecurityCard() {
-  const { user, locale, lang } = useGlobal()
+function SecurityCard({ user, forceStatic }) {
+  const { locale, lang } = useGlobal()
+  const safeUser = forceStatic ? {} : user || {}
   const userText = locale?.USER || {}
   const unknownText =
     userText.UNKNOWN ?? (lang?.startsWith('en') ? 'Unknown' : '未知')
@@ -245,8 +313,8 @@ function SecurityCard() {
                 {userText.LAST_LOGIN ?? '最后登录时间'}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                {user?.lastSignInAt
-                  ? new Date(user.lastSignInAt).toLocaleString(displayLang)
+                {safeUser?.lastSignInAt
+                  ? new Date(safeUser.lastSignInAt).toLocaleString(displayLang)
                   : unknownText}
               </p>
             </div>
@@ -271,7 +339,7 @@ function SecurityCard() {
   )
 }
 
-function PreferencesCard() {
+function PreferencesCard({ forceStatic }) {
   const { isDarkMode, toggleDarkMode, lang, locale } = useGlobal()
   const userText = locale?.USER || {}
 
@@ -297,9 +365,14 @@ function PreferencesCard() {
             </span>
           </div>
           <button
-            onClick={toggleDarkMode}
+            onClick={forceStatic ? undefined : toggleDarkMode}
+            disabled={forceStatic}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              isDarkMode ? 'bg-blue-600' : 'bg-gray-200'
+              forceStatic
+                ? 'bg-gray-200 cursor-not-allowed opacity-60'
+                : isDarkMode
+                  ? 'bg-blue-600'
+                  : 'bg-gray-200'
             }`}
           >
             <span

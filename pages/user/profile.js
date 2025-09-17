@@ -1,87 +1,133 @@
 import SEO from '@/components/SEO'
 import { useGlobal } from '@/lib/global'
 import { useEffect } from 'react'
+import { ClerkLoaded, ClerkLoading, SignedIn, SignedOut } from '@clerk/nextjs'
 
 /**
  * 个人中心页面
  * 需要用户登录才能访问
  */
 export default function UserProfile(props) {
-  const { isLoaded, isSignedIn, user, openSignIn, locale } = useGlobal()
+  const global = useGlobal()
+  const { isLoaded, isSignedIn, openSignIn, locale } = global
   const userText = locale?.USER || {}
+  const clerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY)
 
-  // 检查登录状态，未登录则打开登录模态框
-  useEffect(() => {
-    if (isLoaded && !isSignedIn) {
-      const currentUrl = window.location.href
-      sessionStorage.setItem('redirectAfterSignIn', currentUrl)
-      openSignIn()
-    }
-  }, [isLoaded, isSignedIn, openSignIn])
+  const loadingView = (
+    <LoadingState message={userText.LOADING ?? '加载中...'} />
+  )
 
-  if (!isLoaded) {
+  const signedOutView = (
+    <SignInPrompt
+      messageTitle={userText.LOGIN_REQUIRED ?? '需要登录'}
+      messageBody={userText.LOGIN_TO_ACCESS ?? '请先登录以访问个人中心'}
+      ctaLabel={userText.LOGIN_NOW ?? '立即登录'}
+      onSignIn={openSignIn}
+      autoOpen={clerkEnabled}
+    />
+  )
+
+  const signedInView = <ProfileLayout />
+
+  if (clerkEnabled) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">
-            {userText.LOADING ?? '加载中...'}
-          </p>
-        </div>
-      </div>
+      <>
+        <SEO {...props} />
+        <ClerkLoading>{loadingView}</ClerkLoading>
+        <ClerkLoaded>
+          <SignedIn>{signedInView}</SignedIn>
+          <SignedOut>{signedOutView}</SignedOut>
+        </ClerkLoaded>
+      </>
     )
   }
 
+  if (!isLoaded) {
+    return loadingView
+  }
+
   if (!isSignedIn) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <i className="fas fa-lock text-6xl text-gray-400 mb-4"></i>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            {userText.LOGIN_REQUIRED ?? '需要登录'}
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">
-            {userText.LOGIN_TO_ACCESS ?? '请先登录以访问个人中心'}
-          </p>
-          <button
-            onClick={() => openSignIn()}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            {userText.LOGIN_NOW ?? '立即登录'}
-          </button>
-        </div>
-      </div>
-    )
+    return signedOutView
   }
 
   return (
     <>
       <SEO {...props} />
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              {userText.PROFILE ?? '个人中心'}
-            </h1>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">
-              {userText.MANAGE_ACCOUNT ?? '管理您的账户信息和偏好设置'}
-            </p>
+      {signedInView}
+    </>
+  )
+}
+
+function LoadingState({ message }) {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto"></div>
+        <p className="mt-4 text-gray-600 dark:text-gray-400">{message}</p>
+      </div>
+    </div>
+  )
+}
+
+function SignInPrompt({ messageTitle, messageBody, ctaLabel, onSignIn, autoOpen }) {
+  useEffect(() => {
+    const currentUrl = typeof window !== 'undefined' ? window.location.href : ''
+    if (currentUrl) {
+      sessionStorage.setItem('redirectAfterSignIn', currentUrl)
+    }
+    if (autoOpen) {
+      onSignIn?.()
+    }
+  }, [autoOpen, onSignIn])
+
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <i className="fas fa-lock text-6xl text-gray-400 mb-4"></i>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          {messageTitle}
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400 mb-4">{messageBody}</p>
+        <button
+          onClick={() => onSignIn?.()}
+          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          {ctaLabel}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function ProfileLayout() {
+  const { locale, user } = useGlobal()
+  const userText = locale?.USER || {}
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            {userText.PROFILE ?? '个人中心'}
+          </h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
+            {userText.MANAGE_ACCOUNT ?? '管理您的账户信息和偏好设置'}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1">
+            <UserInfoCard user={user} />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-1">
-              <UserInfoCard user={user} />
-            </div>
-
-            <div className="lg:col-span-2 space-y-6">
-              <AccountManagementCard />
-              <SecurityCard />
-              <PreferencesCard />
-            </div>
+          <div className="lg:col-span-2 space-y-6">
+            <AccountManagementCard />
+            <SecurityCard />
+            <PreferencesCard />
           </div>
         </div>
       </div>
-    </>
+    </div>
   )
 }
 

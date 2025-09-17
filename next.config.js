@@ -278,6 +278,14 @@ const nextConfig = {
 
     if (!isServer) {
       console.log('[默认主题]', path.resolve(__dirname, 'themes', THEME))
+      config.resolve.fallback = {
+        ...(config.resolve.fallback || {}),
+        dns: false,
+        net: false,
+        tls: false,
+        fs: false,
+        path: false
+      }
     }
     config.resolve.alias['@theme-components'] = path.resolve(
       __dirname,

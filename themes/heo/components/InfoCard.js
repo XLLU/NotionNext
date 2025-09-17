@@ -1,9 +1,10 @@
 import { ArrowRightCircle } from '@/components/HeroIcons'
 import LazyImage from '@/components/LazyImage'
 import { siteConfig } from '@/lib/config'
+import { useGlobal } from '@/lib/global'
 import SmartLink from '@/components/SmartLink'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import CONFIG from '../config'
 import Announcement from './Announcement'
 import Card from './Card'
@@ -75,8 +76,9 @@ export function InfoCard(props) {
  * @returns
  */
 function MoreButton() {
+  const { locale } = useGlobal()
   const url3 = siteConfig('HEO_INFO_CARD_URL3', null, CONFIG)
-  const text3 = siteConfig('HEO_INFO_CARD_TEXT3', null, CONFIG)
+  const text3 = locale?.INFOCARD?.MORE || siteConfig('HEO_INFO_CARD_TEXT3', null, CONFIG)
   if (!url3) {
     return <></>
   }
@@ -101,8 +103,15 @@ function MoreButton() {
  * 欢迎语
  */
 function GreetingsWords() {
-  const greetings = siteConfig('HEO_INFOCARD_GREETINGS', null, CONFIG)
+  const { locale } = useGlobal()
+  const greetings = locale?.INFOCARD?.GREETINGS || siteConfig('HEO_INFOCARD_GREETINGS', null, CONFIG)
   const [greeting, setGreeting] = useState(greetings[0])
+
+  // 当locale变化时，更新greeting
+  useEffect(() => {
+    setGreeting(greetings[0])
+  }, [greetings])
+
   // 每次点击，随机获取greetings中的一个
   const handleChangeGreeting = () => {
     const randomIndex = Math.floor(Math.random() * greetings.length)

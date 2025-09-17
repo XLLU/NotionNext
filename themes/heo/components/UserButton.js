@@ -1,6 +1,7 @@
 import { useGlobal } from '@/lib/global'
 import { Menu, Transition } from '@headlessui/react'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { Fragment } from 'react'
 
 /**
@@ -10,7 +11,29 @@ import { Fragment } from 'react'
  * - 已登录：显示用户头像和下拉菜单
  */
 export default function UserButton({ className = '', size = 'md' }) {
-  const { isLoaded, isSignedIn, user, openSignIn, openUserProfile, signOut, locale } = useGlobal()
+  const {
+    isLoaded,
+    isSignedIn,
+    user,
+    openSignIn,
+    openUserProfile,
+    signOut,
+    locale,
+    lang
+  } = useGlobal()
+  const router = useRouter()
+
+  // 根据当前路由确定用户中心页面URL
+  const getUserProfileUrl = () => {
+    const currentPath = router.asPath ? router.asPath.split('?')[0] : '/'
+    const prefixMatch = currentPath.match(/^\/([^/]+)(?=\/|$)/)
+    const pathPrefix = prefixMatch?.[1]
+    const normalizedLang = lang?.toLowerCase()
+    const isEnglish =
+      normalizedLang?.startsWith('en') || pathPrefix?.toLowerCase() === 'en'
+
+    return `${isEnglish ? '/en' : ''}/user/profile`
+  }
 
   // 尺寸样式配置
   const sizeConfig = {
@@ -75,7 +98,7 @@ export default function UserButton({ className = '', size = 'md' }) {
           onClick={(e) => {
             // 单击直接跳转到个人中心页面
             e.preventDefault()
-            window.location.href = '/user/profile'
+            window.location.href = getUserProfileUrl()
           }}
           onContextMenu={(e) => {
             // 右键显示下拉菜单（阻止默认右键菜单）
@@ -119,13 +142,13 @@ export default function UserButton({ className = '', size = 'md' }) {
             <Menu.Item>
               {({ active }) => (
                 <Link
-                  href="/user/profile"
+                  href={getUserProfileUrl()}
                   className={`${
                     active ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-200'
                   } group flex items-center px-4 py-2 text-sm`}
                 >
                   <i className="fas fa-user mr-3 h-4 w-4" />
-                  个人中心
+                  {locale?.USER?.PROFILE || '个人中心'}
                 </Link>
               )}
             </Menu.Item>
@@ -139,7 +162,7 @@ export default function UserButton({ className = '', size = 'md' }) {
                   } group flex w-full items-center px-4 py-2 text-sm`}
                 >
                   <i className="fas fa-cog mr-3 h-4 w-4" />
-                  账户设置
+                  {locale?.USER?.ACCOUNT_MANAGEMENT || '账户设置'}
                 </button>
               )}
             </Menu.Item>
@@ -156,7 +179,7 @@ export default function UserButton({ className = '', size = 'md' }) {
                   } group flex w-full items-center px-4 py-2 text-sm`}
                 >
                   <i className="fas fa-sign-out-alt mr-3 h-4 w-4" />
-                  退出登录
+                  {locale?.COMMON?.SIGN_OUT || '退出登录'}
                 </button>
               )}
             </Menu.Item>
@@ -172,7 +195,29 @@ export default function UserButton({ className = '', size = 'md' }) {
  * 专门为移动端侧边抽屉设计的用户状态控件
  */
 export function UserButtonMobile({ className = '' }) {
-  const { isLoaded, isSignedIn, user, openSignIn, openUserProfile, signOut, locale } = useGlobal()
+  const {
+    isLoaded,
+    isSignedIn,
+    user,
+    openSignIn,
+    openUserProfile,
+    signOut,
+    locale,
+    lang
+  } = useGlobal()
+  const router = useRouter()
+
+  // 根据当前路由确定用户中心页面URL
+  const getUserProfileUrl = () => {
+    const currentPath = router.asPath ? router.asPath.split('?')[0] : '/'
+    const prefixMatch = currentPath.match(/^\/([^/]+)(?=\/|$)/)
+    const pathPrefix = prefixMatch?.[1]
+    const normalizedLang = lang?.toLowerCase()
+    const isEnglish =
+      normalizedLang?.startsWith('en') || pathPrefix?.toLowerCase() === 'en'
+
+    return `${isEnglish ? '/en' : ''}/user/profile`
+  }
 
   // 加载状态
   if (!isLoaded) {
@@ -238,18 +283,18 @@ export function UserButtonMobile({ className = '' }) {
       {/* 功能按钮 */}
       <div className="grid grid-cols-2 gap-2">
         <Link
-          href="/user/profile"
+          href={getUserProfileUrl()}
           className="duration-200 hover:text-white hover:shadow-md flex cursor-pointer justify-center items-center px-3 py-2 border dark:border-gray-600 bg-white hover:bg-blue-600 dark:bg-[#1e1e1e] rounded-lg text-sm"
         >
           <i className="fas fa-user mr-2"></i>
-          个人中心
+          {locale?.USER?.PROFILE || '个人中心'}
         </Link>
         <button
           onClick={() => openUserProfile()}
           className="duration-200 hover:text-white hover:shadow-md flex cursor-pointer justify-center items-center px-3 py-2 border dark:border-gray-600 bg-white hover:bg-gray-600 dark:bg-[#1e1e1e] rounded-lg text-sm"
         >
           <i className="fas fa-cog mr-2"></i>
-          设置
+          {locale?.USER?.PREFERENCES || '设置'}
         </button>
       </div>
 
@@ -259,7 +304,7 @@ export function UserButtonMobile({ className = '' }) {
         className="w-full duration-200 hover:text-white hover:shadow-md flex cursor-pointer justify-center items-center px-3 py-2 border dark:border-gray-600 bg-white hover:bg-red-600 dark:bg-[#1e1e1e] rounded-lg text-sm"
       >
         <i className="fas fa-sign-out-alt mr-2"></i>
-        退出登录
+        {locale?.COMMON?.SIGN_OUT || '退出登录'}
       </button>
     </div>
   )

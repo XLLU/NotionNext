@@ -379,6 +379,31 @@ const getSEOMeta = (props, router, locale) => {
         slug: 'category',
         type: 'website'
       }
+    case '/user/profile':
+    case '/en/user/profile':
+      return {
+        title: `${locale?.USER?.PROFILE || '个人中心'} | ${siteInfo?.title}`,
+        description: `${locale?.USER?.MANAGE_ACCOUNT || '管理您的账户信息和偏好设置'}`,
+        image: `${siteInfo?.pageCover}`,
+        slug: router.route === '/en/user/profile' ? 'en/user/profile' : 'user/profile',
+        type: 'website'
+      }
+    case '/sign-in':
+      return {
+        title: `${locale?.COMMON?.SIGN_IN || '登录'} | ${siteInfo?.title}`,
+        description: `${locale?.USER?.LOGIN_TO_ACCESS || '登录您的账户'}`,
+        image: `${siteInfo?.pageCover}`,
+        slug: 'sign-in',
+        type: 'website'
+      }
+    case '/sign-up':
+      return {
+        title: `${locale?.COMMON?.SIGN_UP || '注册'} | ${siteInfo?.title}`,
+        description: `${locale?.USER?.SIGN_UP_DESCRIPTION || '创建新账户'}`,
+        image: `${siteInfo?.pageCover}`,
+        slug: 'sign-up',
+        type: 'website'
+      }
     default:
       return {
         title: post

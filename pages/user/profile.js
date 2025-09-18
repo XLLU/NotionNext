@@ -88,7 +88,7 @@ export default function UserProfile(props) {
   }
 
   return (
-    <div key={`user-profile-${hasMounted ? 'mounted' : 'hydrating'}`}>
+    <div key="user-profile">
       <SEO {...props} />
       {renderContent()}
     </div>

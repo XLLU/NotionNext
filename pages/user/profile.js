@@ -13,19 +13,8 @@ export default function UserProfile(props) {
   const clerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY)
   const [hasMounted, setHasMounted] = useState(false)
 
-  // Debug logging
-  useEffect(() => {
-    console.log('UserProfile component mounted/updated:', {
-      hasMounted,
-      isLoaded,
-      isSignedIn,
-      clerkEnabled
-    })
-  })
-
   useEffect(() => {
     setHasMounted(true)
-    console.log('UserProfile hasMounted set to true')
   }, [])
 
   const loadingMessage = userText.LOADING ?? '加载中...'

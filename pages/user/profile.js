@@ -30,19 +30,48 @@ export default function UserProfile(props) {
         console.log(`[UserProfile] DOM check - Headers: ${headers.length}, Mains: ${mains.length}, Footers: ${footers.length}`)
 
         let cleaned = false
+
+        // More aggressive cleanup: remove all but the last occurrence of duplicate elements
         ;[headers, mains, footers].forEach(elements => {
           if (elements.length > 1) {
             console.log(`[UserProfile] Found ${elements.length} duplicate ${elements[0].tagName} elements, cleaning up...`)
+            // Remove all but the last element (keep the most recently rendered/hydrated one)
             for (let i = 0; i < elements.length - 1; i++) {
               const element = elements[i]
               if (element && element.parentNode && element.parentNode.contains(element)) {
-                const isTopLevel = element.parentNode === document.body ||
-                                 (element.parentNode.tagName === 'DIV' &&
-                                  element.parentNode.parentNode === document.body)
-                if (isTopLevel) {
-                  console.log(`[UserProfile] Removing duplicate ${element.tagName} element`)
-                  element.parentNode.removeChild(element)
-                  cleaned = true
+                try {
+                  console.log(`[UserProfile] Removing duplicate ${element.tagName} element (${i + 1}/${elements.length})`)
+
+                  // Find the root container to remove (traverse up to find the main content container)
+                  let containerToRemove = element
+                  let current = element.parentNode
+
+                  // Traverse up to find a container that's likely the main layout wrapper
+                  while (current && current !== document.body) {
+                    // Look for common layout container indicators
+                    if (current.tagName === 'DIV' &&
+                        (current.id?.includes('theme') ||
+                         current.className?.includes('wrapper') ||
+                         current.className?.includes('layout') ||
+                         current.className?.includes('container'))) {
+                      containerToRemove = current
+                      break
+                    }
+                    current = current.parentNode
+                  }
+
+                  // Fallback: remove the immediate parent if it's a DIV
+                  if (containerToRemove === element && element.parentNode?.tagName === 'DIV') {
+                    containerToRemove = element.parentNode
+                  }
+
+                  if (containerToRemove && containerToRemove.parentNode) {
+                    containerToRemove.parentNode.removeChild(containerToRemove)
+                    cleaned = true
+                    console.log(`[UserProfile] Successfully removed duplicate container`)
+                  }
+                } catch (error) {
+                  console.error(`[UserProfile] Error removing duplicate element:`, error)
                 }
               }
             }

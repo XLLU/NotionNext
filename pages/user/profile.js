@@ -18,90 +18,81 @@ export default function UserProfile(props) {
   }, [])
 
   const loadingMessage = userText.LOADING ?? '加载中...'
-
   const signOutTitle = userText.LOGIN_REQUIRED ?? '需要登录'
   const signOutBody = userText.LOGIN_TO_ACCESS ?? '请先登录以访问个人中心'
   const signOutCta = userText.LOGIN_NOW ?? '立即登录'
 
-  const signedInView = <ProfileLayout />
+  // Single point of return to prevent multiple renders
+  const renderContent = () => {
+    // Always show static content during initial hydration
+    if (!hasMounted) {
+      return <ProfileLayout forceStatic />
+    }
 
-  // For SSR/CSR consistency, always render the same structure on initial load
-  if (!hasMounted) {
-    return (
-      <div key="ssr-hydrating">
-        <SEO {...props} />
-        <ProfileLayout forceStatic />
-      </div>
-    )
+    // After mounting, handle Clerk authentication
+    if (clerkEnabled) {
+      if (!isLoaded) {
+        return (
+          <>
+            <ProfileLayout forceStatic />
+            <LoadingOverlay message={loadingMessage} />
+          </>
+        )
+      }
+
+      if (!isSignedIn) {
+        return (
+          <>
+            <ProfileLayout forceStatic />
+            <SignInPrompt
+              messageTitle={signOutTitle}
+              messageBody={signOutBody}
+              ctaLabel={signOutCta}
+              onSignIn={openSignIn}
+              autoOpen
+            />
+          </>
+        )
+      }
+
+      // User is authenticated
+      return <ProfileLayout />
+    } else {
+      // Fallback when Clerk is not enabled
+      if (!isLoaded) {
+        return (
+          <>
+            <ProfileLayout forceStatic />
+            <LoadingOverlay message={loadingMessage} />
+          </>
+        )
+      }
+
+      if (!isSignedIn) {
+        return (
+          <>
+            <ProfileLayout forceStatic />
+            <SignInPrompt
+              messageTitle={signOutTitle}
+              messageBody={signOutBody}
+              ctaLabel={signOutCta}
+              onSignIn={openSignIn}
+            />
+          </>
+        )
+      }
+
+      // User is authenticated (fallback)
+      return <ProfileLayout />
+    }
   }
 
-  if (clerkEnabled) {
-    if (!isLoaded) {
-      return (
-        <div key="clerk-loading-profile">
-          <SEO {...props} />
-          <ProfileLayout forceStatic />
-          <LoadingOverlay message={loadingMessage} />
-        </div>
-      )
-    }
-
-    if (!isSignedIn) {
-      return (
-        <div key="clerk-signin-profile">
-          <SEO {...props} />
-          <ProfileLayout forceStatic />
-          <SignInPrompt
-            messageTitle={signOutTitle}
-            messageBody={signOutBody}
-            ctaLabel={signOutCta}
-            onSignIn={openSignIn}
-            autoOpen
-          />
-        </div>
-      )
-    }
-
-    return (
-      <div key="clerk-authenticated-profile">
-        <SEO {...props} />
-        {signedInView}
-      </div>
-    )
-  } else {
-    // Fallback for when Clerk is not enabled
-    if (!isLoaded) {
-      return (
-        <div key="loading-profile">
-          <SEO {...props} />
-          <ProfileLayout forceStatic />
-          <LoadingOverlay message={loadingMessage} />
-        </div>
-      )
-    }
-
-    if (!isSignedIn) {
-      return (
-        <div key="signin-profile">
-          <SEO {...props} />
-          <ProfileLayout forceStatic />
-          <SignInPrompt
-            messageTitle={signOutTitle}
-            messageBody={signOutBody}
-            ctaLabel={signOutCta}
-            onSignIn={openSignIn}
-          />
-        </div>
-      )
-    }
-
-    return (
-      <div key="authenticated-profile-fallback">
-        <SEO {...props} />
-        {signedInView}
-      </div>
-    )
-  }
+  return (
+    <div key={`user-profile-${hasMounted ? 'mounted' : 'hydrating'}`}>
+      <SEO {...props} />
+      {renderContent()}
+    </div>
+  )
 }
 
 function LoadingOverlay({ message }) {

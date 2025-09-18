@@ -17,10 +17,10 @@ export default function UserProfile(props) {
     setHasMounted(true)
   }, [])
 
-  // 生产环境hydration清理机制 - 处理重复渲染问题
+  // 生产环境hydration清理机制 - MutationObserver实时检测重复渲染
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      console.log(`[UserProfile] Starting cleanup mechanism, hasMounted: ${hasMounted}`)
+      console.log(`[UserProfile] Starting MutationObserver cleanup mechanism, hasMounted: ${hasMounted}`)
 
       const fixDuplicateElements = () => {
         const headers = document.querySelectorAll('header')
@@ -55,18 +55,73 @@ export default function UserProfile(props) {
       const initialClean = fixDuplicateElements()
       console.log(`[UserProfile] Initial cleanup result: ${initialClean}`)
 
-      // 设置多重延迟检查，确保捕获所有可能的时机
-      const cleanupIntervals = [100, 300, 500, 1000, 1500, 2000, 3000]
-      const timers = cleanupIntervals.map(delay =>
-        setTimeout(() => {
-          const cleaned = fixDuplicateElements()
-          if (cleaned) {
-            console.log(`[UserProfile] Cleanup successful at ${delay}ms delay`)
-          }
-        }, delay)
-      )
+      // 创建MutationObserver实时监控DOM变化
+      let observer = null
+      let observerTimeout = null
 
-      return () => timers.forEach(timer => clearTimeout(timer))
+      const startObserver = () => {
+        observer = new MutationObserver((mutations) => {
+          let shouldCheck = false
+          mutations.forEach((mutation) => {
+            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+              mutation.addedNodes.forEach((node) => {
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                  const tagName = node.tagName?.toLowerCase()
+                  if (tagName === 'header' || tagName === 'main' || tagName === 'footer') {
+                    console.log(`[UserProfile] MutationObserver detected new ${tagName} element`)
+                    shouldCheck = true
+                  }
+                  // 也检查添加节点的子元素
+                  if (node.querySelector) {
+                    const children = node.querySelectorAll('header, main, footer')
+                    if (children.length > 0) {
+                      console.log(`[UserProfile] MutationObserver detected ${children.length} layout elements in new node`)
+                      shouldCheck = true
+                    }
+                  }
+                }
+              })
+            }
+          })
+
+          if (shouldCheck) {
+            console.log(`[UserProfile] MutationObserver triggered cleanup`)
+            const cleaned = fixDuplicateElements()
+            if (cleaned) {
+              console.log(`[UserProfile] MutationObserver cleanup successful`)
+            }
+          }
+        })
+
+        observer.observe(document.body, {
+          childList: true,
+          subtree: true
+        })
+
+        console.log(`[UserProfile] MutationObserver started`)
+      }
+
+      // 延迟启动观察器，确保初始DOM已稳定
+      const startTimeout = setTimeout(startObserver, 50)
+
+      // 10秒后停止观察器（避免长期监控影响性能）
+      observerTimeout = setTimeout(() => {
+        if (observer) {
+          observer.disconnect()
+          console.log(`[UserProfile] MutationObserver stopped after timeout`)
+        }
+      }, 10000)
+
+      return () => {
+        clearTimeout(startTimeout)
+        if (observerTimeout) {
+          clearTimeout(observerTimeout)
+        }
+        if (observer) {
+          observer.disconnect()
+          console.log(`[UserProfile] MutationObserver cleanup on unmount`)
+        }
+      }
     }
   }, [hasMounted])
 

@@ -39,17 +39,17 @@ export default function UserProfile(props) {
 
     if (!isLoaded) {
       return (
-        <>
+        <div key="clerk-loading-profile">
           <SEO {...props} />
           <ProfileLayout forceStatic />
           <LoadingOverlay message={loadingMessage} />
-        </>
+        </div>
       )
     }
 
     if (!isSignedIn) {
       return (
-        <>
+        <div key="clerk-signin-profile">
           <SEO {...props} />
           <ProfileLayout forceStatic />
           <SignInPrompt
@@ -59,31 +59,31 @@ export default function UserProfile(props) {
             onSignIn={openSignIn}
             autoOpen
           />
-        </>
+        </div>
       )
     }
 
     return (
-      <>
+      <div key="clerk-authenticated-profile">
         <SEO {...props} />
         {signedInView}
-      </>
+      </div>
     )
   } else {
     // Fallback for when Clerk is not enabled
     if (!isLoaded) {
       return (
-        <>
+        <div key="loading-profile">
           <SEO {...props} />
           <ProfileLayout forceStatic />
           <LoadingOverlay message={loadingMessage} />
-        </>
+        </div>
       )
     }
 
     if (!isSignedIn) {
       return (
-        <>
+        <div key="signin-profile">
           <SEO {...props} />
           <ProfileLayout forceStatic />
           <SignInPrompt
@@ -92,15 +92,15 @@ export default function UserProfile(props) {
             ctaLabel={signOutCta}
             onSignIn={openSignIn}
           />
-        </>
+        </div>
       )
     }
 
     return (
-      <>
+      <div key="authenticated-profile-fallback">
         <SEO {...props} />
         {signedInView}
-      </>
+      </div>
     )
   }
 }

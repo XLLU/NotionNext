@@ -26,10 +26,10 @@ export default function UserProfile(props) {
   const signedInView = <ProfileLayout />
 
   const renderStatic = () => (
-    <>
+    <div key="ssr-static-profile">
       <SEO {...props} />
       <ProfileLayout forceStatic />
-    </>
+    </div>
   )
 
   if (clerkEnabled) {

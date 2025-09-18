@@ -25,18 +25,17 @@ export default function UserProfile(props) {
 
   const signedInView = <ProfileLayout />
 
-  const renderStatic = () => (
-    <div key="ssr-static-profile">
-      <SEO {...props} />
-      <ProfileLayout forceStatic />
-    </div>
-  )
+  // For SSR/CSR consistency, always render the same structure on initial load
+  if (!hasMounted) {
+    return (
+      <div key="ssr-hydrating">
+        <SEO {...props} />
+        <ProfileLayout forceStatic />
+      </div>
+    )
+  }
 
   if (clerkEnabled) {
-    if (!hasMounted) {
-      return renderStatic()
-    }
-
     if (!isLoaded) {
       return (
         <div key="clerk-loading-profile">

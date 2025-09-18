@@ -129,23 +129,50 @@ const getLayoutNameByPath = path => {
 
 /**
  * 切换主题时的特殊处理
- * 删除多余的元素
+ * 删除多余的元素，增强版本用于处理生产环境hydration问题
  */
 const fixThemeDOM = () => {
   if (isBrowser) {
-    const elements = document.querySelectorAll('[id^="theme-"]')
-    if (elements?.length > 1) {
-      for (let i = 0; i < elements.length - 1; i++) {
+    // 原有的主题元素清理
+    const themeElements = document.querySelectorAll('[id^="theme-"]')
+    if (themeElements?.length > 1) {
+      for (let i = 0; i < themeElements.length - 1; i++) {
         if (
-          elements[i] &&
-          elements[i].parentNode &&
-          elements[i].parentNode.contains(elements[i])
+          themeElements[i] &&
+          themeElements[i].parentNode &&
+          themeElements[i].parentNode.contains(themeElements[i])
         ) {
-          elements[i].parentNode.removeChild(elements[i])
+          themeElements[i].parentNode.removeChild(themeElements[i])
         }
       }
-      elements[0]?.scrollIntoView()
+      themeElements[0]?.scrollIntoView()
     }
+
+    // 增强清理：处理生产环境hydration导致的重复结构
+    // 检查是否有重复的header、main、footer结构
+    const headers = document.querySelectorAll('header')
+    const mains = document.querySelectorAll('main')
+    const footers = document.querySelectorAll('footer')
+
+    // 如果发现重复的结构元素，保留最后一个（通常是正确hydrated的）
+    ;[headers, mains, footers].forEach(elements => {
+      if (elements.length > 1) {
+        console.log(`[fixThemeDOM] Found ${elements.length} duplicate ${elements[0].tagName} elements, cleaning up...`)
+        for (let i = 0; i < elements.length - 1; i++) {
+          const element = elements[i]
+          if (element && element.parentNode && element.parentNode.contains(element)) {
+            // 检查是否是真正的重复内容（避免误删正常的嵌套结构）
+            const isTopLevel = element.parentNode === document.body ||
+                             element.parentNode.tagName === 'DIV' &&
+                             element.parentNode.parentNode === document.body
+            if (isTopLevel) {
+              console.log(`[fixThemeDOM] Removing duplicate ${element.tagName} element`)
+              element.parentNode.removeChild(element)
+            }
+          }
+        }
+      }
+    })
   }
 }
 

@@ -17,6 +17,45 @@ export default function UserProfile(props) {
     setHasMounted(true)
   }, [])
 
+  // 生产环境hydration清理机制 - 处理重复渲染问题
+  useEffect(() => {
+    if (hasMounted && typeof window !== 'undefined') {
+      // 延迟执行清理，确保所有组件都已加载
+      const cleanupTimer = setTimeout(() => {
+        const fixDuplicateElements = () => {
+          const headers = document.querySelectorAll('header')
+          const mains = document.querySelectorAll('main')
+          const footers = document.querySelectorAll('footer')
+
+          ;[headers, mains, footers].forEach(elements => {
+            if (elements.length > 1) {
+              console.log(`[UserProfile] Found ${elements.length} duplicate ${elements[0].tagName} elements, cleaning up...`)
+              for (let i = 0; i < elements.length - 1; i++) {
+                const element = elements[i]
+                if (element && element.parentNode && element.parentNode.contains(element)) {
+                  const isTopLevel = element.parentNode === document.body ||
+                                   (element.parentNode.tagName === 'DIV' &&
+                                    element.parentNode.parentNode === document.body)
+                  if (isTopLevel) {
+                    console.log(`[UserProfile] Removing duplicate ${element.tagName} element`)
+                    element.parentNode.removeChild(element)
+                  }
+                }
+              }
+            }
+          })
+        }
+
+        fixDuplicateElements()
+
+        // 再次延迟执行，确保 Clerk 加载完成后的状态更新不会产生新的重复
+        setTimeout(fixDuplicateElements, 1000)
+      }, 500)
+
+      return () => clearTimeout(cleanupTimer)
+    }
+  }, [hasMounted])
+
   const loadingMessage = userText.LOADING ?? '加载中...'
   const signOutTitle = userText.LOGIN_REQUIRED ?? '需要登录'
   const signOutBody = userText.LOGIN_TO_ACCESS ?? '请先登录以访问个人中心'

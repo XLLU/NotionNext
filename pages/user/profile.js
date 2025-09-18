@@ -69,39 +69,40 @@ export default function UserProfile(props) {
         {signedInView}
       </>
     )
-  }
+  } else {
+    // Fallback for when Clerk is not enabled
+    if (!isLoaded) {
+      return (
+        <>
+          <SEO {...props} />
+          <ProfileLayout forceStatic />
+          <LoadingOverlay message={loadingMessage} />
+        </>
+      )
+    }
 
-  if (!isLoaded) {
+    if (!isSignedIn) {
+      return (
+        <>
+          <SEO {...props} />
+          <ProfileLayout forceStatic />
+          <SignInPrompt
+            messageTitle={signOutTitle}
+            messageBody={signOutBody}
+            ctaLabel={signOutCta}
+            onSignIn={openSignIn}
+          />
+        </>
+      )
+    }
+
     return (
       <>
         <SEO {...props} />
-        <ProfileLayout forceStatic />
-        <LoadingOverlay message={loadingMessage} />
+        {signedInView}
       </>
     )
   }
-
-  if (!isSignedIn) {
-    return (
-      <>
-        <SEO {...props} />
-        <ProfileLayout forceStatic />
-        <SignInPrompt
-          messageTitle={signOutTitle}
-          messageBody={signOutBody}
-          ctaLabel={signOutCta}
-          onSignIn={openSignIn}
-        />
-      </>
-    )
-  }
-
-  return (
-    <>
-      <SEO {...props} />
-      {signedInView}
-    </>
-  )
 }
 
 function LoadingOverlay({ message }) {

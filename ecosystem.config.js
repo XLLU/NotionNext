@@ -5,8 +5,8 @@ module.exports = {
     args: 'start',
     env: {
       NODE_ENV: 'production',
-      VERCEL_ENV: 'production',
-      EXPORT: 'false'
+      VERCEL_ENV: 'production'
+      // EXPORT removed to prevent static export mode conflicts
       // Clerk keys will be set via server environment variables
       // NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY
     },

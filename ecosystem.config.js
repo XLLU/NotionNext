@@ -7,6 +7,8 @@ module.exports = {
       NODE_ENV: 'production',
       VERCEL_ENV: 'production',
       EXPORT: 'false'
+      // Clerk keys will be set via server environment variables
+      // NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY
     },
     // PM2 配置
     instances: 1,

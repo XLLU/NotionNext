@@ -18,11 +18,7 @@ import BLOG from '@/blog.config'
 import ExternalPlugins from '@/components/ExternalPlugins'
 import SEO from '@/components/SEO'
 import { zhCN } from '@clerk/localizations'
-import dynamic from 'next/dynamic'
-// import { ClerkProvider } from '@clerk/nextjs'
-const ClerkProvider = dynamic(() =>
-  import('@clerk/nextjs').then(m => m.ClerkProvider)
-)
+import { ClerkProvider } from '@clerk/nextjs'
 
 /**
  * App挂载DOM 入口文件
@@ -61,14 +57,25 @@ const MyApp = ({ Component, pageProps }) => {
       <ExternalPlugins {...pageProps} />
     </GlobalContextProvider>
   )
+  if (!enableClerk) {
+    return content
+  }
+
+  const clerkConfig = {
+    localization: zhCN,
+    publishableKey: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+    signInUrl: process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL || '/sign-in',
+    signUpUrl: process.env.NEXT_PUBLIC_CLERK_SIGN_UP_URL || '/sign-up',
+    afterSignInUrl:
+      process.env.NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL || '/admin/analytics',
+    afterSignUpUrl:
+      process.env.NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL || '/admin/analytics'
+  }
+
   return (
-    <>
-      {enableClerk ? (
-        <ClerkProvider localization={zhCN}>{content}</ClerkProvider>
-      ) : (
-        content
-      )}
-    </>
+    <ClerkProvider {...clerkConfig}>
+      {content}
+    </ClerkProvider>
   )
 }
 

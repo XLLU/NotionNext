@@ -30,6 +30,10 @@ export function useClerkAuth() {
     return []
   }, [rawAdminEmails])
 
+  const normalizedAdminEmails = useMemo(() => {
+    return adminEmails.map(email => email?.toLowerCase()).filter(Boolean)
+  }, [adminEmails])
+
   // 用户基本信息
   const userInfo = useMemo(() => {
     if (!user || !isSignedIn) return null
@@ -108,12 +112,12 @@ export function useClerkAuth() {
     if (!enableAdminProtection) return true
     if (!user || !isSignedIn) return false
 
-    const userEmail = user.emailAddresses[0]?.emailAddress
+    const userEmail = user.emailAddresses[0]?.emailAddress?.toLowerCase()
     if (!userEmail) return false
 
     // 检查用户邮箱是否在管理员列表中
-    return adminEmails.includes(userEmail)
-  }, [adminEmails, enableAdminProtection, isSignedIn, user])
+    return normalizedAdminEmails.includes(userEmail)
+  }, [enableAdminProtection, isSignedIn, normalizedAdminEmails, user])
 
   // 检查用户是否有特定权限（可扩展）
   const hasPermission = useCallback((permission) => {

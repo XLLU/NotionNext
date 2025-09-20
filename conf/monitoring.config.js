@@ -87,7 +87,7 @@ module.exports = {
   // Admin 访问控制配置
   ADMIN_EMAILS: process.env.NEXT_PUBLIC_ADMIN_EMAILS ?
     process.env.NEXT_PUBLIC_ADMIN_EMAILS.split(',').map(email => email.trim()) :
-    ['lucas@freemium.cc', 'lucas.lu.xllu@gmail.com'], // 默认管理员邮箱，生产环境应通过环境变量配置
+    ['lucas@freemium.cc', 'lucas.lu.xllu@gmail.com', 'lucasluu@yahoo.com'], // 默认管理员邮箱，生产环境应通过环境变量配置
   ENABLE_ADMIN_PROTECTION: process.env.NEXT_PUBLIC_ENABLE_ADMIN_PROTECTION !== 'false', // 默认启用
 
   // 第三方集成配置

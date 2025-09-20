@@ -128,6 +128,8 @@ const ExternalPlugin = props => {
   )
 
   const ENABLE_ICON_FONT = siteConfig('ENABLE_ICON_FONT', false)
+  const ENABLE_WEB_VITALS = siteConfig('ENABLE_WEB_VITALS', true, NOTION_CONFIG)
+  const ENABLE_USER_BEHAVIOR_TRACKING = siteConfig('ENABLE_USER_BEHAVIOR_TRACKING', true, NOTION_CONFIG)
 
   const UMAMI_HOST = siteConfig('UMAMI_HOST', null, NOTION_CONFIG)
   const UMAMI_ID = siteConfig('UMAMI_ID', null, NOTION_CONFIG)
@@ -199,6 +201,8 @@ const ExternalPlugin = props => {
       {MOUSE_FOLLOW && <MouseFollow />}
       {THEME_SWITCH && <ThemeSwitch />}
       {DEBUG && <DebugPanel />}
+      {ENABLE_WEB_VITALS && <PerformanceMonitor />}
+      {ENABLE_USER_BEHAVIOR_TRACKING && <UserBehaviorTracker />}
       {ANALYTICS_ACKEE_TRACKER && <Ackee />}
       {ANALYTICS_GOOGLE_ID && <Gtag />}
       {ANALYTICS_VERCEL && <Analytics />}
@@ -521,6 +525,12 @@ const LA51 = dynamic(() => import('@/components/LA51'), {
   ssr: false
 })
 const TianliGPT = dynamic(() => import('@/components/TianliGPT'), {
+  ssr: false
+})
+const PerformanceMonitor = dynamic(() => import('@/components/PerformanceMonitor'), {
+  ssr: false
+})
+const UserBehaviorTracker = dynamic(() => import('@/components/UserBehaviorTracker'), {
   ssr: false
 })
 

@@ -1,5 +1,6 @@
 import { useUser, useAuth, useClerk } from '@clerk/nextjs'
 import { useCallback, useMemo } from 'react'
+import { siteConfig } from '@/lib/config'
 
 /**
  * Clerk 认证状态管理 Hook
@@ -12,6 +13,21 @@ export function useClerkAuth() {
 
   // 判断是否完全加载完成
   const isLoaded = userLoaded && authLoaded
+
+  const enableAdminProtection = siteConfig('ENABLE_ADMIN_PROTECTION', true)
+  const rawAdminEmails = siteConfig('ADMIN_EMAILS', [])
+  const adminEmails = useMemo(() => {
+    if (Array.isArray(rawAdminEmails)) {
+      return rawAdminEmails
+    }
+    if (typeof rawAdminEmails === 'string') {
+      return rawAdminEmails
+        .split(',')
+        .map(email => email.trim())
+        .filter(Boolean)
+    }
+    return []
+  }, [rawAdminEmails])
 
   // 用户基本信息
   const userInfo = useMemo(() => {
@@ -86,16 +102,36 @@ export function useClerkAuth() {
     })
   }, [openUserProfile])
 
-  // 检查用户是否有特定权限（可扩展）
-  const hasPermission = useCallback((permission) => {
+  // 检查用户是否为管理员
+  const isAdmin = useMemo(() => {
+    if (!enableAdminProtection) return true
     if (!user || !isSignedIn) return false
 
-    // 这里可以基于用户的 publicMetadata 或其他字段来判断权限
-    // 例如：return user.publicMetadata?.permissions?.includes(permission)
+    const userEmail = user.emailAddresses[0]?.emailAddress
+    if (!userEmail) return false
 
-    // 暂时返回已登录状态作为基础权限
-    return true
-  }, [user, isSignedIn])
+    // 检查用户邮箱是否在管理员列表中
+    return adminEmails.includes(userEmail)
+  }, [adminEmails, enableAdminProtection, isSignedIn, user])
+
+  // 检查用户是否有特定权限（可扩展）
+  const hasPermission = useCallback((permission) => {
+    if (!enableAdminProtection) return true
+    if (!user || !isSignedIn) return false
+
+    // 检查特定权限
+    switch (permission) {
+      case 'admin':
+        return isAdmin
+      case 'analytics':
+        return isAdmin
+      case 'seo-check':
+        return isAdmin
+      default:
+        // 基础权限：已登录即可
+        return true
+    }
+  }, [enableAdminProtection, user, isAdmin, isSignedIn])
 
   // 获取用户偏好设置（从 publicMetadata）
   const userPreferences = useMemo(() => {
@@ -108,6 +144,7 @@ export function useClerkAuth() {
     // 状态
     isLoaded,
     isSignedIn: isSignedIn || false,
+    isAdmin,
     user: userInfo,
     userPreferences,
 

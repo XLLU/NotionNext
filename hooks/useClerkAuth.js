@@ -12,7 +12,8 @@ export function useClerkAuth() {
   const { openSignIn, openSignUp, openUserProfile } = useClerk()
 
   // 判断是否完全加载完成
-  const isLoaded = userLoaded && authLoaded
+  const clerkLoaded = typeof authLoaded === 'boolean' ? authLoaded : true
+  const isLoaded = userLoaded && clerkLoaded
 
   const enableAdminProtection = siteConfig('ENABLE_ADMIN_PROTECTION', true)
   const rawAdminEmails = siteConfig('ADMIN_EMAILS', [])
@@ -159,7 +160,7 @@ export function useClerkAuth() {
 
     // 原始 Clerk 对象（如需高级功能）
     rawUser: user,
-    clerkLoaded: isLoaded
+    clerkLoaded
   }
 }
 

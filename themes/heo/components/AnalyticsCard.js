@@ -1,6 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import CONFIG from '../config'
-import { siteConfig } from '@/lib/config'
 import { useGlobal } from '@/lib/global'
 import useAnalyticsSummary from '@/hooks/useAnalyticsSummary'
 
@@ -15,12 +13,9 @@ const formatNumber = value => {
 /**
  * 网站统计卡片，展示 Post 数量、站龄、GA4 会话等指标
  */
-export function AnalyticsCard({ postCount, analytics, metrics, showSiteMeta = true }) {
+export function AnalyticsCard({ analytics, metrics }) {
   const {
-    locale,
-    postCount: globalPostCount = 0,
-    siteStats,
-    allNavPages = []
+    locale
   } = useGlobal()
 
   const [localMetrics, setLocalMetrics] = useState(null)
@@ -47,46 +42,11 @@ export function AnalyticsCard({ postCount, analytics, metrics, showSiteMeta = tr
 
   const effectiveMetrics = metrics || localMetrics || {}
 
-  const posts = useMemo(() => {
-    return allNavPages.filter(
-      post => post?.type === 'Post' && post?.status === 'Published'
-    )
-  }, [allNavPages])
-
   const toDate = value => {
     if (!value) return null
     const date = value instanceof Date ? value : new Date(value)
     return Number.isNaN(date?.getTime()) ? null : date
   }
-
-  const computedFirstPostDate = useMemo(() => {
-    const explicit = toDate(siteStats?.firstPostDate)
-    if (explicit) return explicit
-    const publishTimes = posts
-      .map(post => {
-        const candidate = toDate(post?.publishDate || post?.date)
-        return candidate ? candidate.getTime() : null
-      })
-      .filter(Boolean)
-    if (publishTimes.length === 0) return null
-    return new Date(Math.min(...publishTimes))
-  }, [posts, siteStats?.firstPostDate])
-
-  const fallbackCreateTime = siteConfig('HEO_SITE_CREATE_TIME', null, CONFIG)
-  const createDate = computedFirstPostDate || toDate(fallbackCreateTime)
-  const today = new Date()
-  const diffDays = createDate
-    ? Math.max(1, Math.ceil((today.getTime() - createDate.getTime()) / (1000 * 60 * 60 * 24)))
-    : '--'
-
-  const effectivePostCount = useMemo(() => {
-    if (postCount !== undefined && postCount !== null) return postCount
-    if (siteStats?.postCount !== undefined && siteStats?.postCount !== null) {
-      return siteStats.postCount
-    }
-    if (posts.length) return posts.length
-    return globalPostCount
-  }, [postCount, siteStats?.postCount, posts, globalPostCount])
 
   const performanceScore = (() => {
     const load = effectiveMetrics?.pageLoadTime
@@ -98,11 +58,6 @@ export function AnalyticsCard({ postCount, analytics, metrics, showSiteMeta = tr
     return 60
   })()
 
-  const postCountTitle =
-    locale?.COMMON?.POST_COUNT || siteConfig('HEO_POST_COUNT_TITLE', null, CONFIG)
-  const siteTimeTitle =
-    locale?.COMMON?.SITE_TIME || siteConfig('HEO_SITE_TIME_TITLE', null, CONFIG)
-
   const todaySessions = formatNumber(dailySummary?.sessions)
   const visits7d = formatNumber(summary?.pageViews)
   const realtimeUsers = formatNumber(realtime?.activeUsers)
@@ -111,12 +66,6 @@ export function AnalyticsCard({ postCount, analytics, metrics, showSiteMeta = tr
 
   return (
     <div className='text-md flex flex-col space-y-1 justify-center px-3'>
-      {showSiteMeta && (
-        <>
-          <DataRow label={postCountTitle} value={formatNumber(effectivePostCount)} color='text-blue-600' />
-          <DataRow label={siteTimeTitle} value={diffDays === '--' ? '--' : `${diffDays}天`} color='text-green-600' />
-        </>
-      )}
       <DataRow label='今日访问(会话)' value={gaUnavailable && !loading ? '--' : todaySessions} color='text-orange-600' />
       <DataRow label='近7天浏览量' value={gaUnavailable && !loading ? '--' : visits7d} color='text-purple-600' />
       <DataRow

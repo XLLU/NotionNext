@@ -15,7 +15,7 @@ const formatNumber = value => {
 /**
  * 网站统计卡片，展示 Post 数量、站龄、GA4 会话等指标
  */
-export function AnalyticsCard({ postCount, analytics, metrics }) {
+export function AnalyticsCard({ postCount, analytics, metrics, showSiteMeta = true }) {
   const { locale, postCount: globalPostCount = 0, siteStats } = useGlobal()
 
   const [localMetrics, setLocalMetrics] = useState(null)
@@ -85,8 +85,12 @@ export function AnalyticsCard({ postCount, analytics, metrics }) {
 
   return (
     <div className='text-md flex flex-col space-y-1 justify-center px-3'>
-      <DataRow label={postCountTitle} value={formatNumber(effectivePostCount)} color='text-blue-600' />
-      <DataRow label={siteTimeTitle} value={diffDays === '--' ? '--' : `${diffDays}天`} color='text-green-600' />
+      {showSiteMeta && (
+        <>
+          <DataRow label={postCountTitle} value={formatNumber(effectivePostCount)} color='text-blue-600' />
+          <DataRow label={siteTimeTitle} value={diffDays === '--' ? '--' : `${diffDays}天`} color='text-green-600' />
+        </>
+      )}
       <DataRow label='今日访问(会话)' value={gaUnavailable && !loading ? '--' : todaySessions} color='text-orange-600' />
       <DataRow label='近7天浏览量' value={gaUnavailable && !loading ? '--' : visits7d} color='text-purple-600' />
       <DataRow

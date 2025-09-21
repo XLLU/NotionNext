@@ -204,10 +204,9 @@ export default function AnalyticsDashboard() {
               <div className='p-6'>
                 <AnalyticsCard
                   postCount={totalPostCount}
-                  gaSummary={gaSummary}
-                  dailySummary={dailySummary}
-                  realtime={realtimeData}
+                  analytics={{ summary: gaSummary, dailySummary, realtime: realtimeData, hasConfig }}
                   metrics={metrics}
+                  showSiteMeta={false}
                 />
               </div>
             </div>

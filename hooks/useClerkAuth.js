@@ -1,6 +1,7 @@
 import { useUser, useAuth, useClerk } from '@clerk/nextjs'
 import { useCallback, useMemo } from 'react'
 import { siteConfig } from '@/lib/config'
+import { normalizeAdminEmails } from '@/lib/utils/admin'
 
 /**
  * Clerk 认证状态管理 Hook
@@ -17,22 +18,7 @@ export function useClerkAuth() {
 
   const enableAdminProtection = siteConfig('ENABLE_ADMIN_PROTECTION', true)
   const rawAdminEmails = siteConfig('ADMIN_EMAILS', [])
-  const adminEmails = useMemo(() => {
-    if (Array.isArray(rawAdminEmails)) {
-      return rawAdminEmails
-    }
-    if (typeof rawAdminEmails === 'string') {
-      return rawAdminEmails
-        .split(',')
-        .map(email => email.trim())
-        .filter(Boolean)
-    }
-    return []
-  }, [rawAdminEmails])
-
-  const normalizedAdminEmails = useMemo(() => {
-    return adminEmails.map(email => email?.toLowerCase()).filter(Boolean)
-  }, [adminEmails])
+  const adminEmails = useMemo(() => normalizeAdminEmails(rawAdminEmails), [rawAdminEmails])
 
   // 用户基本信息
   const userInfo = useMemo(() => {
@@ -116,8 +102,8 @@ export function useClerkAuth() {
     if (!userEmail) return false
 
     // 检查用户邮箱是否在管理员列表中
-    return normalizedAdminEmails.includes(userEmail)
-  }, [enableAdminProtection, isSignedIn, normalizedAdminEmails, user])
+    return adminEmails.includes(userEmail)
+  }, [adminEmails, enableAdminProtection, isSignedIn, user])
 
   // 检查用户是否有特定权限（可扩展）
   const hasPermission = useCallback((permission) => {
@@ -136,7 +122,7 @@ export function useClerkAuth() {
         // 基础权限：已登录即可
         return true
     }
-  }, [enableAdminProtection, user, isAdmin, isSignedIn])
+  }, [enableAdminProtection, isAdmin, isSignedIn, user])
 
   // 获取用户偏好设置（从 publicMetadata）
   const userPreferences = useMemo(() => {

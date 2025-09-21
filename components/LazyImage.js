@@ -24,9 +24,7 @@ export default function LazyImage({
   const maxWidth = siteConfig('IMAGE_COMPRESS_WIDTH')
   const defaultPlaceholderSrc = siteConfig('IMG_LAZY_LOAD_PLACEHOLDER')
   const imageRef = useRef(null)
-  const [currentSrc, setCurrentSrc] = useState(
-    placeholderSrc || defaultPlaceholderSrc
-  )
+  const [currentSrc, setCurrentSrc] = useState(src || placeholderSrc || defaultPlaceholderSrc)
 
   /**
    * 占位图加载成功
@@ -65,8 +63,7 @@ export default function LazyImage({
   }
 
   useEffect(() => {
-    const adjustedImageSrc =
-      adjustImgSize(src, maxWidth) || defaultPlaceholderSrc
+    const adjustedImageSrc = adjustImgSize(src, maxWidth) || defaultPlaceholderSrc
 
     // 如果是优先级图片，直接加载
     if (priority) {

@@ -1,9 +1,10 @@
 import { useGlobal } from '@/lib/global'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { AnalyticsCard } from '@/themes/heo/components/AnalyticsCard'
 import { useClerkAuth } from '@/hooks/useClerkAuth'
 import Head from 'next/head'
 import Link from 'next/link'
+import useAnalyticsSummary from '@/hooks/useAnalyticsSummary'
 
 const GA_SOURCE_DESC = '数据来源：Google Analytics 4（最近 7 天）'
 
@@ -19,65 +20,34 @@ export default function AnalyticsDashboard() {
     deviceType: '',
     browserInfo: ''
   })
-  const [gaSummary, setGaSummary] = useState(null)
-  const [realtimeData, setRealtimeData] = useState(null)
-  const [topPages, setTopPages] = useState([])
-  const [dailySummary, setDailySummary] = useState(null)
-  const [loadingData, setLoadingData] = useState(false)
-  const [analyticsError, setAnalyticsError] = useState(null)
+  const {
+    summary: gaSummary,
+    realtime: realtimeData,
+    topPages = [],
+    dailySummary,
+    loading: loadingData,
+    error: analyticsError,
+    hasConfig,
+    refresh: refreshAnalytics
+  } = useAnalyticsSummary({ auto: isLoaded && hasPermission('analytics') })
 
   useEffect(() => {
+    if (!isLoaded || !hasPermission('analytics')) return
     if (typeof window === 'undefined') return
-
     const navigation = performance.getEntriesByType('navigation')[0]
-    const resources = performance.getEntriesByType('resource')
+    const resources = performance.getEntriesByType('resource') || []
 
     setMetrics({
-      pageLoadTime: navigation ? Math.max(Math.round(navigation.loadEventEnd - navigation.fetchStart), 0) : 0,
+      pageLoadTime: navigation
+        ? Math.max(Math.round(navigation.loadEventEnd - navigation.fetchStart), 0)
+        : null,
       resourceCount: resources.length,
       memoryUsage: navigator.deviceMemory ? `${navigator.deviceMemory}GB` : '未知',
       connectionType: navigator.connection ? navigator.connection.effectiveType : '未知',
       deviceType: /Mobile|Android|iPhone|iPad/.test(navigator.userAgent) ? '移动设备' : '桌面设备',
       browserInfo: navigator.userAgent.split(' ').slice(-2).join(' ')
     })
-  }, [])
-
-  const fetchAnalytics = useCallback(async () => {
-    try {
-      setLoadingData(true)
-      setAnalyticsError(null)
-
-      const res = await fetch('/api/analytics/summary?range=7d')
-      const result = await res.json()
-
-      if (!res.ok) {
-        throw new Error(result.error || '获取 GA 数据失败')
-      }
-
-      if (!result.hasConfig) {
-        setAnalyticsError('未检测到 GA4 配置，请先在环境变量中补齐凭据')
-        setGaSummary(null)
-        setRealtimeData(null)
-        setTopPages([])
-        return
-      }
-
-      setGaSummary(result.summary)
-      setRealtimeData(result.realtime)
-      setDailySummary(result.dailySummary)
-      setTopPages(result.topPages || [])
-    } catch (error) {
-      console.error('[admin/analytics] fetch error', error)
-      setAnalyticsError(error.message || '无法获取 GA 数据')
-    } finally {
-      setLoadingData(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!isLoaded || !hasPermission('analytics')) return
-    fetchAnalytics()
-  }, [fetchAnalytics, hasPermission, isLoaded])
+  }, [hasPermission, isLoaded])
 
   const summaryCards = useMemo(() => ([
     {
@@ -107,6 +77,14 @@ export default function AnalyticsDashboard() {
       color: 'bg-purple-500'
     }
   ]), [gaSummary, realtimeData])
+
+  const analyticsWarningMessage = useMemo(() => {
+    if (analyticsError?.message) return analyticsError.message
+    if (hasConfig === false) {
+      return '未检测到 GA4 配置，请先在环境变量中补齐凭据'
+    }
+    return null
+  }, [analyticsError, hasConfig])
 
   if (!isLoaded) {
     return (
@@ -181,7 +159,7 @@ export default function AnalyticsDashboard() {
                 <span className='text-xs text-blue-600 dark:text-blue-400'>正在同步最新数据...</span>
               )}
               <button
-                onClick={() => { void fetchAnalytics() }}
+                onClick={() => { void refreshAnalytics().catch(() => {}) }}
                 className='inline-flex items-center px-4 py-2 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors disabled:opacity-60'
                 disabled={loadingData}
               >
@@ -190,9 +168,9 @@ export default function AnalyticsDashboard() {
             </div>
           </div>
 
-          {analyticsError && (
+          {analyticsWarningMessage && (
             <div className='mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200'>
-              {analyticsError}
+              {analyticsWarningMessage}
             </div>
           )}
 

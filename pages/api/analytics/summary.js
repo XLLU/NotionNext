@@ -75,8 +75,17 @@ const handler = async (req, res) => {
         hasConfig: false,
         summary: null,
         realtime: null,
+        dailySummary: null,
         topPages: []
       })
+    }
+
+    let dailySummary = null
+    try {
+      const todayResult = await getGA4Summary({ startDate: 'today', endDate: 'today' })
+      dailySummary = todayResult?.summary ?? null
+    } catch (error) {
+      console.warn('[GA4] fetch today summary failed', error?.message)
     }
 
     const topPages = await getTopPages({ ...dateRange, limit: 10 })
@@ -85,6 +94,7 @@ const handler = async (req, res) => {
 
     return res.status(200).json({
       ...summary,
+      dailySummary,
       topPages
     })
   } catch (error) {

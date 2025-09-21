@@ -8,7 +8,7 @@ import Link from 'next/link'
 const GA_SOURCE_DESC = '数据来源：Google Analytics 4（最近 7 天）'
 
 export default function AnalyticsDashboard() {
-  const { allNavPages = [] } = useGlobal()
+  const { postCount: totalPostCount = 0 } = useGlobal()
   const { isLoaded, hasPermission, openSignIn } = useClerkAuth()
 
   const [metrics, setMetrics] = useState({
@@ -22,6 +22,7 @@ export default function AnalyticsDashboard() {
   const [gaSummary, setGaSummary] = useState(null)
   const [realtimeData, setRealtimeData] = useState(null)
   const [topPages, setTopPages] = useState([])
+  const [dailySummary, setDailySummary] = useState(null)
   const [loadingData, setLoadingData] = useState(false)
   const [analyticsError, setAnalyticsError] = useState(null)
 
@@ -32,7 +33,7 @@ export default function AnalyticsDashboard() {
     const resources = performance.getEntriesByType('resource')
 
     setMetrics({
-      pageLoadTime: navigation ? Math.round(navigation.loadEventEnd - navigation.fetchStart) : 0,
+      pageLoadTime: navigation ? Math.max(Math.round(navigation.loadEventEnd - navigation.fetchStart), 0) : 0,
       resourceCount: resources.length,
       memoryUsage: navigator.deviceMemory ? `${navigator.deviceMemory}GB` : '未知',
       connectionType: navigator.connection ? navigator.connection.effectiveType : '未知',
@@ -63,6 +64,7 @@ export default function AnalyticsDashboard() {
 
       setGaSummary(result.summary)
       setRealtimeData(result.realtime)
+      setDailySummary(result.dailySummary)
       setTopPages(result.topPages || [])
     } catch (error) {
       console.error('[admin/analytics] fetch error', error)
@@ -76,10 +78,6 @@ export default function AnalyticsDashboard() {
     if (!isLoaded || !hasPermission('analytics')) return
     fetchAnalytics()
   }, [fetchAnalytics, hasPermission, isLoaded])
-
-  const postCount = useMemo(() => {
-    return allNavPages?.filter(page => page.type === 'Post')?.length || 0
-  }, [allNavPages])
 
   const summaryCards = useMemo(() => ([
     {
@@ -226,7 +224,13 @@ export default function AnalyticsDashboard() {
                 <h3 className='text-lg font-medium text-gray-900 dark:text-white'>统计概览</h3>
               </div>
               <div className='p-6'>
-                <AnalyticsCard postCount={postCount} />
+                <AnalyticsCard
+                  postCount={totalPostCount}
+                  gaSummary={gaSummary}
+                  dailySummary={dailySummary}
+                  realtime={realtimeData}
+                  metrics={metrics}
+                />
               </div>
             </div>
 

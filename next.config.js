@@ -172,24 +172,35 @@ const nextConfig = {
             console.log('[Locales]', siteId)
           }
 
-          // 映射多语言
-          // 示例： source: '/:locale(zh|en)/:path*' ; :locale() 会将语言放入重写后的 `?locale=` 中。
-          langsRewrites.push(
-            {
-              source: `/:locale(${langs.join('|')})/:path*`,
-              destination: '/:path*'
-            },
-            // 匹配没有路径的情况，例如 [domain]/zh 或 [domain]/en
-            {
-              source: `/:locale(${langs.join('|')})`,
-              destination: '/'
-            },
-            // 匹配没有路径的情况，例如 [domain]/zh/ 或 [domain]/en/
-            {
-              source: `/:locale(${langs.join('|')})/`,
-              destination: '/'
+          const rewriteLocales = langs.filter(locale => {
+            if (!locale) {
+              return false
             }
-          )
+            const localeDir = path.resolve(__dirname, 'pages', locale)
+            return !fs.existsSync(localeDir)
+          })
+
+          if (rewriteLocales.length > 0) {
+            const localesPattern = rewriteLocales.join('|')
+            // 映射多语言
+            // 示例： source: '/:locale(zh|en)/:path*'
+            langsRewrites.push(
+              {
+                source: `/:locale(${localesPattern})/:path*`,
+                destination: '/:path*'
+              },
+              // 匹配没有路径的情况，例如 [domain]/zh
+              {
+                source: `/:locale(${localesPattern})`,
+                destination: '/'
+              },
+              // 匹配没有路径的情况，例如 [domain]/zh/
+              {
+                source: `/:locale(${localesPattern})/`,
+                destination: '/'
+              }
+            )
+          }
         }
 
         return [

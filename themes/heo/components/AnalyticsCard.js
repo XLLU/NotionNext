@@ -16,7 +16,12 @@ const formatNumber = value => {
  * 网站统计卡片，展示 Post 数量、站龄、GA4 会话等指标
  */
 export function AnalyticsCard({ postCount, analytics, metrics, showSiteMeta = true }) {
-  const { locale, postCount: globalPostCount = 0, siteStats } = useGlobal()
+  const {
+    locale,
+    postCount: globalPostCount = 0,
+    siteStats,
+    allNavPages = []
+  } = useGlobal()
 
   const [localMetrics, setLocalMetrics] = useState(null)
   const analyticsHook = useAnalyticsSummary({ auto: !analytics })
@@ -42,15 +47,33 @@ export function AnalyticsCard({ postCount, analytics, metrics, showSiteMeta = tr
 
   const effectiveMetrics = metrics || localMetrics || {}
 
+  const posts = useMemo(() => {
+    return allNavPages.filter(
+      post => post?.type === 'Post' && post?.status === 'Published'
+    )
+  }, [allNavPages])
+
   const toDate = value => {
     if (!value) return null
     const date = value instanceof Date ? value : new Date(value)
     return Number.isNaN(date?.getTime()) ? null : date
   }
 
-  const firstPostDate = toDate(siteStats?.firstPostDate)
+  const computedFirstPostDate = useMemo(() => {
+    const explicit = toDate(siteStats?.firstPostDate)
+    if (explicit) return explicit
+    const publishTimes = posts
+      .map(post => {
+        const candidate = toDate(post?.publishDate || post?.date)
+        return candidate ? candidate.getTime() : null
+      })
+      .filter(Boolean)
+    if (publishTimes.length === 0) return null
+    return new Date(Math.min(...publishTimes))
+  }, [posts, siteStats?.firstPostDate])
+
   const fallbackCreateTime = siteConfig('HEO_SITE_CREATE_TIME', null, CONFIG)
-  const createDate = firstPostDate || toDate(fallbackCreateTime)
+  const createDate = computedFirstPostDate || toDate(fallbackCreateTime)
   const today = new Date()
   const diffDays = createDate
     ? Math.max(1, Math.ceil((today.getTime() - createDate.getTime()) / (1000 * 60 * 60 * 24)))
@@ -58,9 +81,12 @@ export function AnalyticsCard({ postCount, analytics, metrics, showSiteMeta = tr
 
   const effectivePostCount = useMemo(() => {
     if (postCount !== undefined && postCount !== null) return postCount
-    if (siteStats?.postCount) return siteStats.postCount
+    if (siteStats?.postCount !== undefined && siteStats?.postCount !== null) {
+      return siteStats.postCount
+    }
+    if (posts.length) return posts.length
     return globalPostCount
-  }, [postCount, siteStats?.postCount, globalPostCount])
+  }, [postCount, siteStats?.postCount, posts, globalPostCount])
 
   const performanceScore = (() => {
     const load = effectiveMetrics?.pageLoadTime
